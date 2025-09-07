@@ -10,7 +10,7 @@ public class Investigator {
     private final String uniqueMsg = "ASK";
 
     private final int askInterval = 250;
-    private final int askReceiveTimeout = 100;
+    private final int askReceiveTimeout = 500;
 
     private String getGroupIP() {
         return "239.255.255.250";
@@ -68,13 +68,12 @@ public class Investigator {
     public void startChecking() {
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
-                wait_millis(askInterval);
+                wait_millis(askInterval/10);
                 sendMsg();
             }
         }).start();
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
-                wait_millis(askInterval/10);
                 ClientData clientData = receiveMsg();
                 clientDatum.put(processMsg(clientData), 1);
             }
