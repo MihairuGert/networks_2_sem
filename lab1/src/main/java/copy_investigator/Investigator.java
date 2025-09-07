@@ -2,8 +2,6 @@ package copy_investigator;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Investigator {
@@ -11,7 +9,7 @@ public class Investigator {
     private MulticastSocket multicastSocket;
     private final String uniqueMsg = "ASK";
 
-    private final int askInterval = 500;
+    private final int askInterval = 250;
     private final int askReceiveTimeout = 100;
 
     private String getGroupIP() {
@@ -44,6 +42,7 @@ public class Investigator {
             multicastSocket = new MulticastSocket(port);
             InetAddress group = InetAddress.getByName(getGroupIP());
             multicastSocket.joinGroup(group);
+            multicastSocket.setSoTimeout(askReceiveTimeout);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -83,9 +82,11 @@ public class Investigator {
         new Thread(()->{
             ConcurrentHashMap<String, Integer> prevClientDatum = new ConcurrentHashMap<>();
             while (!multicastSocket.isClosed()) {
+                wait_millis(askInterval);
                 if (!prevClientDatum.equals(clientDatum)) {
                     prevClientDatum.clear();
                     prevClientDatum.putAll(clientDatum);
+                    clientDatum.clear();
                     System.out.println("<------------>\n");
                     prevClientDatum.forEach((key, value) -> System.out.println(key + '\n'));
                     System.out.println("<------------>\n");
