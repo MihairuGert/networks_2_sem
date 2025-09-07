@@ -1,0 +1,96 @@
+package copy_investigator;
+
+import java.io.IOException;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class Investigator {
+    private final int port = 1500;
+    private MulticastSocket multicastSocket;
+    private final String uniqueMsg = "ASK";
+
+    private final int askInterval = 500;
+    private final int askReceiveTimeout = 100;
+
+    private String getGroupIP() {
+        return "239.255.255.250";
+    }
+
+    private void sendMsg() {
+        byte[] buffer = uniqueMsg.getBytes();
+        try {
+            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName("255.255.255.255"), port);
+            multicastSocket.send(datagramPacket);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private ClientData receiveMsg() {
+        byte[] buffer = new byte[512];
+        DatagramPacket responsePacket = new DatagramPacket(buffer, buffer.length);
+        try {
+            multicastSocket.receive(responsePacket);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return new ClientData(responsePacket.getAddress(), new String(responsePacket.getData()).trim());
+    }
+
+    Investigator() {
+        try {
+            multicastSocket = new MulticastSocket(port);
+            InetAddress group = InetAddress.getByName(getGroupIP());
+            multicastSocket.joinGroup(group);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void wait_millis(int millis) {
+        try {
+            Thread.sleep(askInterval);
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private String processMsg(ClientData clientData) {
+        if (clientData.getMsg().equals(uniqueMsg)) {
+            return clientData.getAddress().toString();
+        }
+        return "Corrupted message";
+    }
+
+    private ConcurrentHashMap<String, Integer> clientDatum = new ConcurrentHashMap<>();
+
+    public void startChecking() {
+        new Thread(()->{
+            while (!multicastSocket.isClosed()) {
+                wait_millis(askInterval);
+                sendMsg();
+            }
+        }).start();
+        new Thread(()->{
+            while (!multicastSocket.isClosed()) {
+                wait_millis(askInterval/10);
+                ClientData clientData = receiveMsg();
+                clientDatum.put(processMsg(clientData), 1);
+            }
+        }).start();
+        new Thread(()->{
+            ConcurrentHashMap<String, Integer> prevClientDatum = new ConcurrentHashMap<>();
+            while (!multicastSocket.isClosed()) {
+                if (!prevClientDatum.equals(clientDatum)) {
+                    prevClientDatum.clear();
+                    prevClientDatum.putAll(clientDatum);
+                    System.out.println("<------------>\n");
+                    prevClientDatum.forEach((key, value) -> System.out.println(key + '\n'));
+                    System.out.println("<------------>\n");
+                }
+            }
+        }).start();
+    }
+}
