@@ -21,7 +21,7 @@ public class Investigator {
     private void sendMsg() {
         byte[] buffer = uniqueMsg.getBytes();
         try {
-            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName("255.255.255.255"), port);
+            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(getGroupIP()), port);
             multicastSocket.send(datagramPacket);
         } catch (IOException e) {
             System.out.println(e.getMessage());
