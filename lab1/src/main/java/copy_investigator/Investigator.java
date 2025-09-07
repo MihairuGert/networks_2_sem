@@ -67,6 +67,7 @@ public class Investigator {
     }
 
     private ConcurrentHashMap<String, Long> clientDatum = new ConcurrentHashMap<>();
+    private volatile boolean wasAdded = false;
 
     public void startChecking() {
         new Thread(()->{
@@ -78,16 +79,17 @@ public class Investigator {
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
                 ClientData clientData = receiveMsg();
-                clientDatum.put(processMsg(clientData), System.currentTimeMillis());
+                Long ret = clientDatum.put(processMsg(clientData), System.currentTimeMillis());
+                if (ret == null) {
+                    wasAdded = true;
+                }
             }
         }).start();
         new Thread(()->{
-            int prev_size = 0;
             while (!multicastSocket.isClosed()) {
                 wait_millis(askInterval);
-                int clientDatumSize = clientDatum.size();
-                boolean isChanged = cleanMap() || prev_size != clientDatumSize;
-                prev_size = clientDatumSize;
+                boolean isChanged = cleanMap() || wasAdded;
+                wasAdded = false;
                 if (!isChanged) {
                     continue;
                 }
