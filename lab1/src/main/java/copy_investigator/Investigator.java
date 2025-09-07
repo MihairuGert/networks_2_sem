@@ -2,7 +2,10 @@ package copy_investigator;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class Investigator {
     private final int port = 1500;
@@ -63,34 +66,49 @@ public class Investigator {
         return "Corrupted message";
     }
 
-    private ConcurrentHashMap<String, Integer> clientDatum = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Long> clientDatum = new ConcurrentHashMap<>();
 
     public void startChecking() {
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
-                wait_millis(askInterval/10);
+                wait_millis(askInterval);
                 sendMsg();
             }
         }).start();
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
                 ClientData clientData = receiveMsg();
-                clientDatum.put(processMsg(clientData), 1);
+                clientDatum.put(processMsg(clientData), System.currentTimeMillis());
             }
         }).start();
         new Thread(()->{
-            ConcurrentHashMap<String, Integer> prevClientDatum = new ConcurrentHashMap<>();
+            int prev_size = 0;
             while (!multicastSocket.isClosed()) {
                 wait_millis(askInterval);
-                if (!prevClientDatum.equals(clientDatum)) {
-                    prevClientDatum.clear();
-                    prevClientDatum.putAll(clientDatum);
-                    clientDatum.clear();
-                    System.out.println("<------------>\n");
-                    prevClientDatum.forEach((key, value) -> System.out.println(key + '\n'));
-                    System.out.println("<------------>\n");
+                int clientDatumSize = clientDatum.size();
+                boolean isChanged = cleanMap() || prev_size != clientDatumSize;
+                prev_size = clientDatumSize;
+                if (!isChanged) {
+                    continue;
                 }
+                System.out.println("<------------>\n");
+                clientDatum.forEach((key, value) -> System.out.println(key + '\n'));
+                System.out.println("<------------>\n");
             }
         }).start();
+    }
+
+    private boolean cleanMap() {
+        Iterator<Map.Entry<String, Long>> iterator = clientDatum.entrySet().iterator();
+        Long currentTime = System.currentTimeMillis();
+        boolean isChanged = false;
+        while (iterator.hasNext()) {
+            Map.Entry<String, Long> entry = iterator.next();
+            if (currentTime - entry.getValue() > 500) {
+                iterator.remove();
+                isChanged = true;
+            }
+        }
+        return isChanged;
     }
 }
