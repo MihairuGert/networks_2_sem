@@ -71,7 +71,7 @@ public class Investigator {
     public void startChecking() {
         new Thread(()->{
             while (!multicastSocket.isClosed()) {
-                wait_millis(askInterval);
+                wait_millis(askInterval / 10);
                 sendMsg();
             }
         }).start();
