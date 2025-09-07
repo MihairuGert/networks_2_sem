@@ -2,27 +2,50 @@ package copy_investigator;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class Investigator {
     private final int port = 1500;
     private MulticastSocket multicastSocket;
     private final String uniqueMsg = "ASK";
+    private InetAddress group;
 
     private final int askInterval = 250;
     private final int askReceiveTimeout = 500;
 
-    private String getGroupIP() {
-        return "239.255.255.250";
+    private void setMulticastSocket(String string) throws IOException {
+        group = InetAddress.getByName(string);
+        multicastSocket = new MulticastSocket(port);
+        multicastSocket.setSoTimeout(askReceiveTimeout);
+        if (group instanceof Inet6Address) {
+            multicastSocket.setOption(StandardSocketOptions.IP_MULTICAST_IF, getIPv6Interface());
+        }
+        multicastSocket.joinGroup(group);
+    }
+
+    private NetworkInterface getIPv6Interface() throws IOException {
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface ni = interfaces.nextElement();
+            if (ni.isUp() && !ni.isLoopback() && ni.supportsMulticast()) {
+                Enumeration<InetAddress> addresses = ni.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    if (addresses.nextElement() instanceof Inet6Address) {
+                        return ni;
+                    }
+                }
+            }
+        }
+        throw new IOException("No suitable IPv6 network interface found");
     }
 
     private void sendMsg() {
         byte[] buffer = uniqueMsg.getBytes();
         try {
-            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(getGroupIP()), port);
+            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, group, port);
             multicastSocket.send(datagramPacket);
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -40,12 +63,9 @@ public class Investigator {
         return new ClientData(responsePacket.getAddress(), new String(responsePacket.getData()).trim());
     }
 
-    Investigator() {
+    Investigator(String ip) {
         try {
-            multicastSocket = new MulticastSocket(port);
-            InetAddress group = InetAddress.getByName(getGroupIP());
-            multicastSocket.joinGroup(group);
-            multicastSocket.setSoTimeout(askReceiveTimeout);
+            setMulticastSocket(ip);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
