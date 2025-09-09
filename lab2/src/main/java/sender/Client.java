@@ -41,6 +41,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-
+        Client client = new Client("hui");
+        client.connect("192.168.0.120", 8000);
     }
 }
