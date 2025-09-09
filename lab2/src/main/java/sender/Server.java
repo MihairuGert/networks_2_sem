@@ -10,6 +10,8 @@ public class Server {
     private String relativeDir = "/uploads";
     private final ConcurrentHashMap<ClientData, Integer> clients;
     private final ServerSocket serverSocket;
+    private BufferedReader in;
+    private BufferedWriter out;
 
     public Server(int port) throws Exception {
         if (port > Short.MAX_VALUE*2 - 1) {
@@ -32,16 +34,27 @@ public class Server {
         }
     }
 
+    private String getFilename() throws Exception {
+        try {
+            String str = in.readLine();
+            if (str.matches("FILENAME=*")) {
+                return str;
+            } else {
+                throw new Exception("wrong protocol");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void initializeReceive(ClientData clientData) {
-        BufferedReader in = null;
+        String filename;
         try {
             in = new BufferedReader(new InputStreamReader(clientData.getSocket().getInputStream()));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientData.getSocket().getOutputStream()));
-            String word = in.readLine();
-            System.out.println(word);
-            out.write("Привет, это Сервер! Подтверждаю, вы написали : " + word + "\n");
-            out.flush();
-        } catch (IOException e) {
+            out = new BufferedWriter(new OutputStreamWriter(clientData.getSocket().getOutputStream()));
+            filename = getFilename();
+            System.out.println(filename);
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }

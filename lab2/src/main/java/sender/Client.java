@@ -11,37 +11,50 @@ import java.util.Scanner;
 public class Client {
 
     private final String path;
+    private final String filename;
     private Socket socket;
+    private BufferedReader in;
+    private BufferedWriter out;
 
     public Client(String path) {
         this.path = path;
+        String[] spl = path.split("/");
+        filename = spl[spl.length - 1];
+        if (filename.length() * 16 > 4096) {
+            throw new RuntimeException("wrong length");
+        }
     }
 
     private void connect(String ip, int port) {
         try {
             socket = new Socket(InetAddress.getByName(ip), port);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-
-            System.out.println("Вы что-то хотели сказать? Введите это здесь:");
-            Scanner scanner = new Scanner(System.in);
-            String word = scanner.next();
-
-            out.write(word + "\n");
-            out.flush();
-            String serverWord = in.readLine();
-            System.out.println(serverWord);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void startSend() {
+    private void sendFilename() {
+        try {
+            out.write("FILENAME="+filename+'\n');
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    public void startSend(String ip, int port) {
+        connect(ip, port);
+        try {
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+
+            sendFilename();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void main(String[] args) {
         Client client = new Client("hui");
-        client.connect("192.168.0.120", 8000);
+        client.startSend("192.168.0.120", 8000);
     }
 }
