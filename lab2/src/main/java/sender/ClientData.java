@@ -1,18 +1,22 @@
 package sender;
 
 import java.net.InetAddress;
+import java.net.Socket;
 
 public class ClientData {
-    private final InetAddress address;
-    private final String filename;
+    private String filename;
+    private Socket socket;
 
-    ClientData(InetAddress address, String filename) {
-        this.address = address;
-        this.filename = filename;
+    ClientData(Socket socket) {
+        this.socket = socket;
     }
 
-    public InetAddress getAddress() {
-        return address;
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 
     public String getFilename() {
