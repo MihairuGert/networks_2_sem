@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     private final int port;
-    private String relativeDir = "/uploads";
+    private String relativeDir = "./uploads";
     private final ConcurrentHashMap<ClientData, Integer> clients;
     private final ServerSocket serverSocket;
     private BufferedReader in;
@@ -28,7 +28,7 @@ public class Server {
             ClientData clientData = new ClientData(socket);
             clients.put(clientData, 1);
             new Thread(this::startListen).start();
-            initializeReceive(clientData);
+            receive(clientData);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -37,23 +37,59 @@ public class Server {
     private String getFilename() throws Exception {
         try {
             String str = in.readLine();
-            if (str.matches("FILENAME=*")) {
-                return str;
+            if (str.matches("FILENAME=\\w+")) {
+                return str.split("=")[1];
             } else {
                 throw new Exception("wrong protocol");
+            }
+        } catch (IOException e) {
+            throw new Exception(e);
+        }
+    }
+
+    private BufferedWriter createFile(String filename) {
+        try {
+            return new BufferedWriter(new FileWriter(relativeDir + "/" + filename));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void getFile(String filename) {
+        try(BufferedWriter bufferedWriter = createFile(filename)) {
+            final int rawDataSize = 512;
+            char[] rawData = new char[rawDataSize];
+            while(true) {
+                try {
+                    int symRead = in.read(rawData, 0, 512);
+                    if (symRead == -1) {
+                        break;
+                    }
+                    bufferedWriter.write(rawData, 0, symRead);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void initializeReceive(ClientData clientData) {
+    private void receive(ClientData clientData) {
         String filename;
         try {
             in = new BufferedReader(new InputStreamReader(clientData.getSocket().getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(clientData.getSocket().getOutputStream()));
+
             filename = getFilename();
             System.out.println(filename);
+
+            getFile(filename);
+
+            in.close();
+            out.close();
+            clientData.getSocket().close();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

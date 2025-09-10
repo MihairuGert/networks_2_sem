@@ -41,6 +41,35 @@ public class Client {
         }
     }
 
+    private BufferedReader getFileReader() {
+        try {
+            return new BufferedReader(new FileReader(path));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendFile() {
+        try (BufferedReader bufferedReader = getFileReader()) {
+            final int rawDataSize = 512;
+            char[] rawData = new char[rawDataSize];
+            while(true) {
+                try {
+                    int symRead = bufferedReader.read(rawData, 0, 512);
+                    out.write(rawData, 0, symRead);
+                    if (symRead == -1) {
+                        break;
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void startSend(String ip, int port) {
         connect(ip, port);
         try {
@@ -48,13 +77,18 @@ public class Client {
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
             sendFilename();
+            sendFile();
+
+            in.close();
+            out.close();
+            socket.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static void main(String[] args) {
-        Client client = new Client("hui");
+        Client client = new Client("C:\\Users\\verty\\IdeaProjects\\networks_2_sem\\lab2\\yoy.jpg");
         client.startSend("192.168.0.120", 8000);
     }
 }
