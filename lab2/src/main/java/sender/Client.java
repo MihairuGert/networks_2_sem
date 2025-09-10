@@ -88,7 +88,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        Client client = new Client("C:\\Users\\verty\\IdeaProjects\\networks_2_sem\\lab2\\yoy.jpg");
+        Client client = new Client("./yoy.jpg");
         client.startSend("192.168.0.120", 8000);
     }
 }
