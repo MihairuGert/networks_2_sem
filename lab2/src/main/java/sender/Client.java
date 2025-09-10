@@ -13,8 +13,8 @@ public class Client {
     private final String path;
     private final String filename;
     private Socket socket;
-    private FileInputStream in;
-    private FileOutputStream out;
+    private InputStream in;
+    private OutputStream out;
 
     public Client(String path) {
         this.path = path;
@@ -74,8 +74,8 @@ public class Client {
     public void startSend(String ip, int port) {
         connect(ip, port);
         try {
-            in = (FileInputStream) socket.getInputStream();
-            out = (FileOutputStream) socket.getOutputStream();
+            in = socket.getInputStream();
+            out = socket.getOutputStream();
 
             sendFilename();
             sendFile();

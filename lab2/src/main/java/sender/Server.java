@@ -11,8 +11,8 @@ public class Server {
     private String relativeDir = "./uploads";
     private final ConcurrentHashMap<ClientData, Integer> clients;
     private final ServerSocket serverSocket;
-    private FileInputStream in;
-    private FileOutputStream out;
+    private InputStream in;
+    private OutputStream out;
 
     public Server(int port) throws Exception {
         if (port > Short.MAX_VALUE*2 - 1) {
@@ -88,8 +88,8 @@ public class Server {
     private void receive(ClientData clientData) {
         String filename;
         try {
-            in = (FileInputStream) clientData.getSocket().getInputStream();
-            out = (FileOutputStream) clientData.getSocket().getOutputStream();
+            in = clientData.getSocket().getInputStream();
+            out = clientData.getSocket().getOutputStream();
 
             filename = getFilename();
             System.out.println(filename);
