@@ -11,6 +11,10 @@ public class ClientStatistics {
         return (double) bytes / 1024;
     }
 
+    private double bytesToMb(long bytes) {
+        return (double) bytes / (1024*1024);
+    }
+
     ClientStatistics(long period) {
         timeConnected = System.currentTimeMillis();
         this.period = period;
@@ -21,11 +25,11 @@ public class ClientStatistics {
     }
 
     public double getInstantSpeed() {
-        return bytesToKb(bytesReceived - bytesReceivedPeriodAgo) / period;
+        return bytesToMb(bytesReceived - bytesReceivedPeriodAgo) / period;
     }
 
     public double getAverageSpeed() {
-        return bytesToKb(bytesReceived) / ((double) (System.currentTimeMillis() - timeConnected) /1000);
+        return bytesToMb(bytesReceived) / ((double) (System.currentTimeMillis() - timeConnected) /1000);
     }
 
     public void setFilename(String filename) {

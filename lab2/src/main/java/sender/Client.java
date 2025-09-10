@@ -6,6 +6,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class Client {
@@ -41,6 +44,14 @@ public class Client {
         }
     }
 
+    private void sendFileSize(long size) {
+        try {
+            out.write(("FILE_SIZE="+size+'\n').getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private FileInputStream getFileReader() {
         try {
             return new FileInputStream(path);
@@ -71,6 +82,11 @@ public class Client {
         }
     }
 
+    private static long getFileSize(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        return Files.size(path);
+    }
+
     public void startSend(String ip, int port) {
         connect(ip, port);
         try {
@@ -78,6 +94,7 @@ public class Client {
             out = socket.getOutputStream();
 
             sendFilename();
+            sendFileSize(getFileSize(path));
             sendFile();
 
             in.close();

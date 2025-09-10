@@ -32,9 +32,9 @@ public class Server {
             count++;
             System.out.println("<--Client #" + count + "-->");
             System.out.println("   Filename: " + entry.getValue().getFilename());
-            System.out.println("   Instant Speed: " + decimalFormat.format(entry.getValue().getInstantSpeed()) + " Kb/s");
+            System.out.println("   Instant Speed: " + decimalFormat.format(entry.getValue().getInstantSpeed()) + " Mb/s");
             entry.getValue().setBytesReceivedPeriodAgo();
-            System.out.println("   Average Speed: " + decimalFormat.format(entry.getValue().getAverageSpeed()) + " Kb/s");
+            System.out.println("   Average Speed: " + decimalFormat.format(entry.getValue().getAverageSpeed()) + " Mb/s");
             System.out.println();
         }
     }
@@ -69,7 +69,22 @@ public class Server {
             if (msg.matches("FILENAME=.+")) {
                 return msg.split("=")[1];
             } else {
-                throw new Exception("wrong protocol");
+                throw new Exception("wrong protocol(filename)");
+            }
+        } catch (IOException e) {
+            throw new Exception(e);
+        }
+    }
+
+    private long getFileSize() throws Exception {
+        try {
+            byte[] bytes = new byte[4096];
+            int bytesRead = in.read(bytes);
+            String msg = new String(bytes).trim();
+            if (msg.matches("FILE_SIZE=.+")) {
+                return Long.parseLong(msg.split("=")[1]);
+            } else {
+                throw new Exception("wrong protocol(file size)");
             }
         } catch (IOException e) {
             throw new Exception(e);
@@ -112,14 +127,15 @@ public class Server {
     }
 
     private void receive(ClientData clientData, Socket socket) throws IOException {
-        String filename;
         try (socket) {
             in = clientData.getSocket().getInputStream();
             out = clientData.getSocket().getOutputStream();
 
-            filename = getFilename();
+            String filename = getFilename();
             clients.get(clientData).setFilename(filename);
             System.out.println(filename);
+            Long file_size = getFileSize();
+            System.out.println(file_size);
 
             getFile(clientData, filename);
 
