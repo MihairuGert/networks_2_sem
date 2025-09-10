@@ -37,7 +37,7 @@ public class Server {
     private String getFilename() throws Exception {
         try {
             String str = in.readLine();
-            if (str.matches("FILENAME=\\w+")) {
+            if (str.matches("FILENAME=.+")) {
                 return str.split("=")[1];
             } else {
                 throw new Exception("wrong protocol");
@@ -49,10 +49,15 @@ public class Server {
 
     private BufferedWriter createFile(String filename) {
         try {
-            return new BufferedWriter(new FileWriter(relativeDir + "/" + filename));
+            File directory = new File(relativeDir);
+            if (!directory.exists()) {
+                if (!directory.mkdirs())
+                    throw new IOException("Failed to create directory: " + relativeDir);
+            }
+            return new BufferedWriter(new FileWriter(relativeDir + File.separator + filename));
         } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create file: " + filename, e);
         }
     }
 

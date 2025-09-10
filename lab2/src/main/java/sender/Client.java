@@ -61,7 +61,6 @@ public class Client {
                         break;
                     }
                     out.write(rawData, 0, symRead);
-                    out.flush();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
