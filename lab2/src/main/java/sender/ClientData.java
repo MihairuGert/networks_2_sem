@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class ClientData {
-    private String filename;
     private Socket socket;
 
     ClientData(Socket socket) {
@@ -17,9 +16,5 @@ public class ClientData {
 
     public Socket getSocket() {
         return socket;
-    }
-
-    public String getFilename() {
-        return filename;
     }
 }

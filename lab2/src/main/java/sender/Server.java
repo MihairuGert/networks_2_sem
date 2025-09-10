@@ -4,15 +4,38 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Server {
     private final int port;
     private String relativeDir = "./uploads";
-    private final ConcurrentHashMap<ClientData, Integer> clients;
+
+    private final ConcurrentHashMap<ClientData, ClientStatistics> clients;
     private final ServerSocket serverSocket;
     private InputStream in;
     private OutputStream out;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    private void printClientsInfo() {
+        Iterator<Map.Entry<ClientData, ClientStatistics>> iterator = clients.entrySet().iterator();
+        int count = 0;
+        while (iterator.hasNext()) {
+            Map.Entry<ClientData, ClientStatistics> entry = iterator.next();
+            count++;
+            System.out.println("<--Client #" + count + "-->");
+            System.out.println("   Filename: " + entry.getValue().getFilename());
+            System.out.println("   Instant Speed: " + entry.getValue().getInstantSpeed());
+            entry.getValue().setBytesReceivedPeriodAgo();
+            System.out.println("   Average Speed: " + entry.getValue().getAverageSpeed());
+            System.out.println();
+        }
+    }
 
     public Server(int port) throws Exception {
         if (port > Short.MAX_VALUE*2 - 1) {
@@ -21,13 +44,14 @@ public class Server {
         this.port = port;
         clients = new ConcurrentHashMap<>();
         serverSocket = new ServerSocket(port);
+        scheduler.scheduleAtFixedRate(this::printClientsInfo, 0, 3, TimeUnit.SECONDS);
     }
 
     public void startListen() {
         try {
             Socket socket = serverSocket.accept();
             ClientData clientData = new ClientData(socket);
-            clients.put(clientData, 1);
+            clients.put(clientData, new ClientStatistics(3));
             new Thread(this::startListen).start();
             receive(clientData);
         } catch (IOException e) {
@@ -64,17 +88,17 @@ public class Server {
         }
     }
 
-    private void getFile(String filename) {
+    private void getFile(ClientData clientData, String filename) {
         try(FileOutputStream fileOutputStream = createFile(filename)) {
             final int rawDataSize = 512*4;
             byte[] rawData = new byte[rawDataSize];
             while(true) {
                 try {
                     int symRead = in.read(rawData, 0, rawDataSize);
-
                     if (symRead == -1) {
                         break;
                     }
+                    clients.get(clientData).addBytesReceived(symRead);
                     fileOutputStream.write(rawData, 0, symRead);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -92,9 +116,10 @@ public class Server {
             out = clientData.getSocket().getOutputStream();
 
             filename = getFilename();
+            clients.get(clientData).setFilename(filename);
             System.out.println(filename);
 
-            getFile(filename);
+            getFile(clientData, filename);
 
             in.close();
             out.close();
