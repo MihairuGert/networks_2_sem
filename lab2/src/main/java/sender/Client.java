@@ -57,10 +57,11 @@ public class Client {
             while(true) {
                 try {
                     int symRead = bufferedReader.read(rawData, 0, 512);
-                    out.write(rawData, 0, symRead);
                     if (symRead == -1) {
                         break;
                     }
+                    out.write(rawData, 0, symRead);
+                    out.flush();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
