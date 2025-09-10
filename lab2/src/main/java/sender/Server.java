@@ -88,7 +88,7 @@ public class Server {
         }
     }
 
-    private void getFile(ClientData clientData, String filename) {
+    private void getFile(ClientData clientData, String filename) throws Exception {
         try(FileOutputStream fileOutputStream = createFile(filename)) {
             final int rawDataSize = 512*4;
             byte[] rawData = new byte[rawDataSize];
@@ -101,15 +101,15 @@ public class Server {
                     clients.get(clientData).addBytesReceived(symRead);
                     fileOutputStream.write(rawData, 0, symRead);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new Exception(e);
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new Exception(e);
         }
     }
 
-    private void receive(ClientData clientData) {
+    private void receive(ClientData clientData) throws IOException {
         String filename;
         try {
             in = clientData.getSocket().getInputStream();
@@ -121,11 +121,13 @@ public class Server {
 
             getFile(clientData, filename);
 
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            clients.remove(clientData);
             in.close();
             out.close();
             clientData.getSocket().close();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
         }
     }
 
