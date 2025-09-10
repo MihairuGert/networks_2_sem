@@ -3,6 +3,7 @@ package sender;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -25,14 +26,15 @@ public class Server {
     private void printClientsInfo() {
         Iterator<Map.Entry<ClientData, ClientStatistics>> iterator = clients.entrySet().iterator();
         int count = 0;
+        DecimalFormat decimalFormat = new DecimalFormat("0.00");
         while (iterator.hasNext()) {
             Map.Entry<ClientData, ClientStatistics> entry = iterator.next();
             count++;
             System.out.println("<--Client #" + count + "-->");
             System.out.println("   Filename: " + entry.getValue().getFilename());
-            System.out.println("   Instant Speed: " + entry.getValue().getInstantSpeed());
+            System.out.println("   Instant Speed: " + decimalFormat.format(entry.getValue().getInstantSpeed()) + " Kb/s");
             entry.getValue().setBytesReceivedPeriodAgo();
-            System.out.println("   Average Speed: " + entry.getValue().getAverageSpeed());
+            System.out.println("   Average Speed: " + decimalFormat.format(entry.getValue().getAverageSpeed()) + " Kb/s");
             System.out.println();
         }
     }
@@ -44,7 +46,7 @@ public class Server {
         this.port = port;
         clients = new ConcurrentHashMap<>();
         serverSocket = new ServerSocket(port);
-        scheduler.scheduleAtFixedRate(this::printClientsInfo, 0, 3, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::printClientsInfo, 1, 3, TimeUnit.SECONDS);
     }
 
     public void startListen() {
@@ -53,7 +55,7 @@ public class Server {
             ClientData clientData = new ClientData(socket);
             clients.put(clientData, new ClientStatistics(3));
             new Thread(this::startListen).start();
-            receive(clientData);
+            receive(clientData, socket);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -109,9 +111,9 @@ public class Server {
         }
     }
 
-    private void receive(ClientData clientData) throws IOException {
+    private void receive(ClientData clientData, Socket socket) throws IOException {
         String filename;
-        try {
+        try (socket) {
             in = clientData.getSocket().getInputStream();
             out = clientData.getSocket().getOutputStream();
 
@@ -127,7 +129,6 @@ public class Server {
             clients.remove(clientData);
             in.close();
             out.close();
-            clientData.getSocket().close();
         }
     }
 
