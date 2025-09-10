@@ -35,6 +35,7 @@ public class Server {
             System.out.println("   Instant Speed: " + decimalFormat.format(entry.getValue().getInstantSpeed()) + " Mb/s");
             entry.getValue().setBytesReceivedPeriodAgo();
             System.out.println("   Average Speed: " + decimalFormat.format(entry.getValue().getAverageSpeed()) + " Mb/s");
+            System.out.println("   Progress: " + decimalFormat.format(entry.getValue().getPercent()) + " %");
             System.out.println();
         }
     }
@@ -78,9 +79,18 @@ public class Server {
 
     private long getFileSize() throws Exception {
         try {
-            byte[] bytes = new byte[4096];
-            int bytesRead = in.read(bytes);
-            String msg = new String(bytes).trim();
+            StringBuilder sb = new StringBuilder();
+            int byteRead;
+
+            while ((byteRead = in.read()) != -1) {
+                char c = (char) byteRead;
+                if (c == '\n') {
+                    break;
+                }
+                sb.append(c);
+            }
+
+            String msg = sb.toString();
             if (msg.matches("FILE_SIZE=.+")) {
                 return Long.parseLong(msg.split("=")[1]);
             } else {
@@ -135,6 +145,7 @@ public class Server {
             clients.get(clientData).setFilename(filename);
             System.out.println(filename);
             Long file_size = getFileSize();
+            clients.get(clientData).setFileSize(file_size);
             System.out.println(file_size);
 
             getFile(clientData, filename);

@@ -5,6 +5,7 @@ public class ClientStatistics {
     private final long period;
     private long bytesReceived = 0;
     private long bytesReceivedPeriodAgo;
+    private long fileSize;
     private String filename;
 
     private double bytesToKb(long bytes) {
@@ -32,6 +33,10 @@ public class ClientStatistics {
         return bytesToMb(bytesReceived) / ((double) (System.currentTimeMillis() - timeConnected) /1000);
     }
 
+    public double getPercent() {
+        return ((double) bytesReceived * 100) / fileSize;
+    }
+
     public void setFilename(String filename) {
         this.filename = filename;
     }
@@ -46,5 +51,9 @@ public class ClientStatistics {
 
     public void addBytesReceived(int symRead) {
         bytesReceived += symRead;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
     }
 }
