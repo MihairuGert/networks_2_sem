@@ -39,7 +39,7 @@ public class Server {
         try {
             byte[] bytes = new byte[4096];
             int bytesRead = in.read(bytes);
-            String msg = Arrays.toString(bytes);
+            String msg = new String(bytes).trim();
             if (msg.matches("FILENAME=.+")) {
                 return msg.split("=")[1];
             } else {
