@@ -13,8 +13,8 @@ public class Client {
     private final String path;
     private final String filename;
     private Socket socket;
-    private BufferedReader in;
-    private BufferedWriter out;
+    private FileInputStream in;
+    private FileOutputStream out;
 
     public Client(String path) {
         this.path = path;
@@ -35,15 +35,15 @@ public class Client {
 
     private void sendFilename() {
         try {
-            out.write("FILENAME="+filename+'\n');
+            out.write(("FILENAME="+filename+'\n').getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private BufferedReader getFileReader() {
+    private FileInputStream getFileReader() {
         try {
-            return new BufferedReader(new FileReader(path));
+            return new FileInputStream(path);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -51,16 +51,17 @@ public class Client {
     }
 
     private void sendFile() {
-        try (BufferedReader bufferedReader = getFileReader()) {
+        try (FileInputStream fileInputStream = getFileReader()) {
             final int rawDataSize = 512;
-            char[] rawData = new char[rawDataSize];
+            byte[] rawData = new byte[rawDataSize];
             while(true) {
                 try {
-                    int symRead = bufferedReader.read(rawData, 0, 512);
+                    int symRead = fileInputStream.read(rawData, 0, 512);
                     if (symRead == -1) {
                         break;
                     }
                     out.write(rawData, 0, symRead);
+                    out.flush();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -73,8 +74,8 @@ public class Client {
     public void startSend(String ip, int port) {
         connect(ip, port);
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            in = (FileInputStream) socket.getInputStream();
+            out = (FileOutputStream) socket.getOutputStream();
 
             sendFilename();
             sendFile();

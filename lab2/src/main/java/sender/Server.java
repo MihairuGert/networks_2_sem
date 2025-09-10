@@ -3,6 +3,7 @@ package sender;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
@@ -10,8 +11,8 @@ public class Server {
     private String relativeDir = "./uploads";
     private final ConcurrentHashMap<ClientData, Integer> clients;
     private final ServerSocket serverSocket;
-    private BufferedReader in;
-    private BufferedWriter out;
+    private FileInputStream in;
+    private FileOutputStream out;
 
     public Server(int port) throws Exception {
         if (port > Short.MAX_VALUE*2 - 1) {
@@ -36,9 +37,11 @@ public class Server {
 
     private String getFilename() throws Exception {
         try {
-            String str = in.readLine();
-            if (str.matches("FILENAME=.+")) {
-                return str.split("=")[1];
+            byte[] bytes = new byte[4096];
+            int bytesRead = in.read(bytes);
+            String msg = Arrays.toString(bytes);
+            if (msg.matches("FILENAME=.+")) {
+                return msg.split("=")[1];
             } else {
                 throw new Exception("wrong protocol");
             }
@@ -47,14 +50,14 @@ public class Server {
         }
     }
 
-    private BufferedWriter createFile(String filename) {
+    private FileOutputStream createFile(String filename) {
         try {
             File directory = new File(relativeDir);
             if (!directory.exists()) {
                 if (!directory.mkdirs())
                     throw new IOException("Failed to create directory: " + relativeDir);
             }
-            return new BufferedWriter(new FileWriter(relativeDir + File.separator + filename));
+            return new FileOutputStream(relativeDir + File.separator + filename);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to create file: " + filename, e);
@@ -62,16 +65,17 @@ public class Server {
     }
 
     private void getFile(String filename) {
-        try(BufferedWriter bufferedWriter = createFile(filename)) {
-            final int rawDataSize = 512;
-            char[] rawData = new char[rawDataSize];
+        try(FileOutputStream fileOutputStream = createFile(filename)) {
+            final int rawDataSize = 512*4;
+            byte[] rawData = new byte[rawDataSize];
             while(true) {
                 try {
-                    int symRead = in.read(rawData, 0, 512);
+                    int symRead = in.read(rawData, 0, rawDataSize);
+
                     if (symRead == -1) {
                         break;
                     }
-                    bufferedWriter.write(rawData, 0, symRead);
+                    fileOutputStream.write(rawData, 0, symRead);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -84,8 +88,8 @@ public class Server {
     private void receive(ClientData clientData) {
         String filename;
         try {
-            in = new BufferedReader(new InputStreamReader(clientData.getSocket().getInputStream()));
-            out = new BufferedWriter(new OutputStreamWriter(clientData.getSocket().getOutputStream()));
+            in = (FileInputStream) clientData.getSocket().getInputStream();
+            out = (FileOutputStream) clientData.getSocket().getOutputStream();
 
             filename = getFilename();
             System.out.println(filename);
