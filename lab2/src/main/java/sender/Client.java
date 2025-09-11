@@ -2,14 +2,11 @@ package sender;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Scanner;
 
 public class Client {
 
@@ -87,7 +84,18 @@ public class Client {
         return Files.size(path);
     }
 
-    public void startSend(String ip, int port) {
+    private boolean isSuccess() throws IOException {
+        byte[] data = new byte[128];
+        int bytesRead = in.read(data);
+        String res = new String(data).trim();
+        if (res.equals("SUCCESS")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void startSend(String ip, int port) throws IOException {
         connect(ip, port);
         try {
             in = socket.getInputStream();
@@ -97,16 +105,32 @@ public class Client {
             sendFileSize(getFileSize(path));
             sendFile();
 
+            boolean isSuccess = isSuccess();
+            printSendResult(isSuccess);
+
+        } catch (IOException e) {
+            throw new IOException(e);
+        } finally {
             in.close();
             out.close();
             socket.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        }
+    }
+
+    private static void printSendResult(boolean isSuccess) {
+        if (isSuccess) {
+            System.out.println("File sending was completed successfully.");
+        } else {
+            System.out.println("File sending was failed.");
         }
     }
 
     public static void main(String[] args) {
         Client client = new Client("./yoy.jpg");
-        client.startSend("192.168.0.120", 8000);
+        try {
+            client.startSend("192.168.0.120", 8000);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

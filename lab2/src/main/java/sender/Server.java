@@ -3,6 +3,7 @@ package sender;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Time;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,20 +24,29 @@ public class Server {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private void printClientInfo(ClientData clientData) {
+        ClientStatistics clientStatistics = clients.get(clientData);
+        printStats(clientStatistics);
+    }
+
+    private static void printStats(ClientStatistics clientStatistics) {
+        DecimalFormat decimalFormat = new DecimalFormat("0.00");
+        System.out.println("   Filename: " + clientStatistics.getFilename());
+        System.out.println("   Instant Speed: " + decimalFormat.format(clientStatistics.getInstantSpeed()) + " Mb/s");
+        clientStatistics.setBytesReceivedPeriodAgo();
+        System.out.println("   Average Speed: " + decimalFormat.format(clientStatistics.getAverageSpeed()) + " Mb/s");
+        System.out.println("   Progress: " + decimalFormat.format(clientStatistics.getPercent()) + " %");
+        System.out.println();
+    }
+
     private void printClientsInfo() {
         Iterator<Map.Entry<ClientData, ClientStatistics>> iterator = clients.entrySet().iterator();
         int count = 0;
-        DecimalFormat decimalFormat = new DecimalFormat("0.00");
         while (iterator.hasNext()) {
             Map.Entry<ClientData, ClientStatistics> entry = iterator.next();
             count++;
             System.out.println("<--Client #" + count + "-->");
-            System.out.println("   Filename: " + entry.getValue().getFilename());
-            System.out.println("   Instant Speed: " + decimalFormat.format(entry.getValue().getInstantSpeed()) + " Mb/s");
-            entry.getValue().setBytesReceivedPeriodAgo();
-            System.out.println("   Average Speed: " + decimalFormat.format(entry.getValue().getAverageSpeed()) + " Mb/s");
-            System.out.println("   Progress: " + decimalFormat.format(entry.getValue().getPercent()) + " %");
-            System.out.println();
+            printStats(entry.getValue());
         }
     }
 
@@ -47,7 +57,7 @@ public class Server {
         this.port = port;
         clients = new ConcurrentHashMap<>();
         serverSocket = new ServerSocket(port);
-        scheduler.scheduleAtFixedRate(this::printClientsInfo, 1, 3, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::printClientsInfo, 0, 3, TimeUnit.SECONDS);
     }
 
     public void startListen() {
@@ -138,17 +148,28 @@ public class Server {
 
     private void receive(ClientData clientData, Socket socket) throws IOException {
         try (socket) {
+            long time_start = System.currentTimeMillis();
+
             in = clientData.getSocket().getInputStream();
             out = clientData.getSocket().getOutputStream();
 
             String filename = getFilename();
             clients.get(clientData).setFilename(filename);
-            System.out.println(filename);
-            Long file_size = getFileSize();
+
+            long file_size = getFileSize();
             clients.get(clientData).setFileSize(file_size);
-            System.out.println(file_size);
 
             getFile(clientData, filename);
+
+            long time_end = System.currentTimeMillis() - time_start;
+            if (TimeUnit.MILLISECONDS.toSeconds(time_end) <= 3)
+                printClientInfo(clientData);
+
+            if (clients.get(clientData).getBytesReceived() == file_size) {
+                out.write("SUCCESS".getBytes());
+            } else {
+                out.write("FAILURE".getBytes());
+            }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());

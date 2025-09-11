@@ -56,4 +56,8 @@ public class ClientStatistics {
     public void setFileSize(long fileSize) {
         this.fileSize = fileSize;
     }
+
+    public long getBytesReceived() {
+        return bytesReceived;
+    }
 }
