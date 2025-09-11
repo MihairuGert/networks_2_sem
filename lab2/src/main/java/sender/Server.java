@@ -57,7 +57,7 @@ public class Server {
         this.port = port;
         clients = new ConcurrentHashMap<>();
         serverSocket = new ServerSocket(port);
-        scheduler.scheduleAtFixedRate(this::printClientsInfo, 0, 3, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::printClientsInfo, 1, 3, TimeUnit.SECONDS);
     }
 
     public void startListen() {
@@ -74,9 +74,7 @@ public class Server {
 
     private String getFilename() throws Exception {
         try {
-            byte[] bytes = new byte[4096];
-            int bytesRead = in.read(bytes);
-            String msg = new String(bytes).trim();
+            String msg = getStringMsg();
             if (msg.matches("FILENAME=.+")) {
                 return msg.split("=")[1];
             } else {
@@ -89,18 +87,7 @@ public class Server {
 
     private long getFileSize() throws Exception {
         try {
-            StringBuilder sb = new StringBuilder();
-            int byteRead;
-
-            while ((byteRead = in.read()) != -1) {
-                char c = (char) byteRead;
-                if (c == '\n') {
-                    break;
-                }
-                sb.append(c);
-            }
-
-            String msg = sb.toString();
+            String msg = getStringMsg();
             if (msg.matches("FILE_SIZE=.+")) {
                 return Long.parseLong(msg.split("=")[1]);
             } else {
@@ -109,6 +96,21 @@ public class Server {
         } catch (IOException e) {
             throw new Exception(e);
         }
+    }
+
+    private String getStringMsg() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int byteRead;
+
+        while ((byteRead = in.read()) != -1) {
+            char c = (char) byteRead;
+            if (c == '\n') {
+                break;
+            }
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
 
     private FileOutputStream createFile(String filename) {
@@ -165,11 +167,11 @@ public class Server {
             if (TimeUnit.MILLISECONDS.toSeconds(time_end) <= 3)
                 printClientInfo(clientData);
 
-            if (clients.get(clientData).getBytesReceived() == file_size) {
-                out.write("SUCCESS".getBytes());
-            } else {
-                out.write("FAILURE".getBytes());
-            }
+//            if (clients.get(clientData).getBytesReceived() == file_size) {
+//                out.write("SUCCESS".getBytes());
+//            } else {
+//                out.write("FAILURE".getBytes());
+//            }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());

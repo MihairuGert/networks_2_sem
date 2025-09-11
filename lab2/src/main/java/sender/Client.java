@@ -88,11 +88,7 @@ public class Client {
         byte[] data = new byte[128];
         int bytesRead = in.read(data);
         String res = new String(data).trim();
-        if (res.equals("SUCCESS")) {
-            return true;
-        } else {
-            return false;
-        }
+        return res.equals("SUCCESS");
     }
 
     public void startSend(String ip, int port) throws IOException {
@@ -105,8 +101,8 @@ public class Client {
             sendFileSize(getFileSize(path));
             sendFile();
 
-            boolean isSuccess = isSuccess();
-            printSendResult(isSuccess);
+//            boolean isSuccess = isSuccess();
+//            printSendResult(isSuccess);
 
         } catch (IOException e) {
             throw new IOException(e);
