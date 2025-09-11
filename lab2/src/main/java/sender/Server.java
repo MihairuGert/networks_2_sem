@@ -167,8 +167,7 @@ public class Server {
             if (TimeUnit.MILLISECONDS.toSeconds(time_end) <= 3)
                 printClientInfo(clientData);
 
-            System.out.println("Asdasd");
-            if (clients.get(clientData).getBytesReceived() == file_size) {
+            if (clients.get(clientData).getBytesReceived() >= file_size) {
                 out.write("SUCCESS".getBytes());
             } else {
                 out.write("FAILURE".getBytes());

@@ -100,7 +100,8 @@ public class Client {
             sendFilename();
             sendFileSize(getFileSize(path));
             sendFile();
-            System.out.println("Asdasd");
+
+            out.close();
             boolean isSuccess = isSuccess();
             printSendResult(isSuccess);
 
@@ -108,7 +109,6 @@ public class Client {
             throw new IOException(e);
         } finally {
             in.close();
-            out.close();
             socket.close();
         }
     }
