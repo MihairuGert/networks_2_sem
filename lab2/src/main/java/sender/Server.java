@@ -3,6 +3,7 @@ package sender;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -74,7 +75,7 @@ public class Server {
 
     private String getFilename() throws Exception {
         try {
-            String msg = getStringMsg();
+            String msg = getStringUTFMsg();
             if (msg.matches("FILENAME=.+")) {
                 return msg.split("=")[1];
             } else {
@@ -111,6 +112,20 @@ public class Server {
         }
 
         return sb.toString();
+    }
+
+    private String getStringUTFMsg() throws IOException {
+        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+        int byteRead;
+
+        while ((byteRead = in.read()) != -1) {
+            if (byteRead == '\n') {
+                break;
+            }
+            byteBuffer.write(byteRead);
+        }
+
+        return byteBuffer.toString(StandardCharsets.UTF_8);
     }
 
     private FileOutputStream createFile(String filename) {

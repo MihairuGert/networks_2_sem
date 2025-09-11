@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,7 +36,7 @@ public class Client {
 
     private void sendFilename() {
         try {
-            out.write(("FILENAME="+filename+'\n').getBytes());
+            out.write(("FILENAME="+filename+'\n').getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -106,7 +107,7 @@ public class Client {
             printSendResult(isSuccess);
 
         } catch (IOException e) {
-            throw new IOException(e);
+            System.out.println(e.getMessage());
         } finally {
             in.close();
             out.close();
