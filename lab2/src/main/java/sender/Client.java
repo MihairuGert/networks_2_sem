@@ -66,7 +66,6 @@ public class Client {
                 try {
                     int symRead = fileInputStream.read(rawData, 0, 512);
                     if (symRead == -1) {
-                        out.write(-1);
                         break;
                     }
                     out.write(rawData, 0, symRead);
@@ -102,6 +101,7 @@ public class Client {
             sendFileSize(getFileSize(path));
             sendFile();
 
+            socket.shutdownOutput();
             boolean isSuccess = isSuccess();
             printSendResult(isSuccess);
 
