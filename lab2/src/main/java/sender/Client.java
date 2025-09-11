@@ -99,7 +99,11 @@ public class Client {
             out = socket.getOutputStream();
 
             sendFilename();
-            sendFileSize(getFileSize(path));
+            long file_size = getFileSize(path);
+            if (file_size > 1024 * 1024 * 1024) {
+                throw new IOException("File size must not exceed 1 Tb.");
+            }
+            sendFileSize(file_size);
             sendFile();
 
             socket.shutdownOutput();

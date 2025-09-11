@@ -1,5 +1,7 @@
 package sender;
 
+import java.util.concurrent.TimeUnit;
+
 public class ClientStatistics {
     private final long timeConnected;
     private final long period;
@@ -26,7 +28,11 @@ public class ClientStatistics {
     }
 
     public double getInstantSpeed() {
-        return bytesToMb(bytesReceived - bytesReceivedPeriodAgo) / period;
+        long secondsFromStart = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - timeConnected);
+        if (secondsFromStart >= period)
+            return bytesToMb(bytesReceived - bytesReceivedPeriodAgo) / period;
+        else
+            return bytesToMb(bytesReceived);
     }
 
     public double getAverageSpeed() {
