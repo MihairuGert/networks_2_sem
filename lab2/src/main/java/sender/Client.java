@@ -100,7 +100,7 @@ public class Client {
             sendFilename();
             sendFileSize(getFileSize(path));
             sendFile();
-
+            System.out.println("Asdasd");
             boolean isSuccess = isSuccess();
             printSendResult(isSuccess);
 
