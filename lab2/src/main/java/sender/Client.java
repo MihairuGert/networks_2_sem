@@ -101,8 +101,8 @@ public class Client {
             sendFileSize(getFileSize(path));
             sendFile();
 
-//            boolean isSuccess = isSuccess();
-//            printSendResult(isSuccess);
+            boolean isSuccess = isSuccess();
+            printSendResult(isSuccess);
 
         } catch (IOException e) {
             throw new IOException(e);

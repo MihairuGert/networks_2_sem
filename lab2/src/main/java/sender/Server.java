@@ -167,11 +167,11 @@ public class Server {
             if (TimeUnit.MILLISECONDS.toSeconds(time_end) <= 3)
                 printClientInfo(clientData);
 
-//            if (clients.get(clientData).getBytesReceived() == file_size) {
-//                out.write("SUCCESS".getBytes());
-//            } else {
-//                out.write("FAILURE".getBytes());
-//            }
+            if (clients.get(clientData).getBytesReceived() == file_size) {
+                out.write("SUCCESS".getBytes());
+            } else {
+                out.write("FAILURE".getBytes());
+            }
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
