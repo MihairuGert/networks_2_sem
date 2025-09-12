@@ -1,5 +1,7 @@
 package lab3;
 
+import netscape.javascript.JSObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -21,17 +23,25 @@ public class HTTPRequester {
 
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String inputLine;
-            StringBuilder response = new StringBuilder();
+            StringBuilder responseBuilder = new StringBuilder();
 
             while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+                responseBuilder.append(inputLine);
             }
             in.close();
-            System.out.println(response.toString());
+
+            String response = responseBuilder.toString();
+            System.out.println(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private String[] parseJson(String json) {
+        String[] locations = null;
+
+        return locations;
     }
 
     private String getLocationName() {
