@@ -1,7 +1,5 @@
 package lab3;
 
-import netscape.javascript.JSObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,6 +30,7 @@ public class HTTPRequester {
 
             String response = responseBuilder.toString();
             System.out.println(response);
+            //JSONObject
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
