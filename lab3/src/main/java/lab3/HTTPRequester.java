@@ -40,13 +40,16 @@ public class HTTPRequester {
 
     private Point getLocationPoint() {
         System.out.println("Search for: ");
-        String locationName = getLocationName();
+        String locationName = getLocationName().replace(" ", "_");
         String response = getJSON(String.format("https://graphhopper.com/api/1/geocode?q=%s&locale=en&key=%s", locationName, GRAPH_HOPPER_API_KEY));
         JSONObject jsonObject = new JSONObject(response);
         JSONArray jsonArray = jsonObject.getJSONArray("hits");
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject object = jsonArray.getJSONObject(i);
             System.out.printf("%d) %s[%s]\t%s\n", i+1, object.getString("country"), object.getString("countrycode"), object.getString("name"));
+        }
+        if (jsonArray.isEmpty()) {
+            throw new RuntimeException("No variants available");
         }
         int chosenVariant = getVariant();
         if (chosenVariant < 1 || chosenVariant > jsonArray.length()) {
@@ -95,8 +98,7 @@ public class HTTPRequester {
 
                     CompletableFuture<String> placeFuture = CompletableFuture.supplyAsync(() -> {
                         try {
-                            String placeDetailsJSON = getDescription(placeId);
-                            return placeDetailsJSON;
+                            return getDescription(placeId);
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to get details for place: " + placeId, e);
                         }
