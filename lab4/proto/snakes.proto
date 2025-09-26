@@ -1,6 +1,6 @@
 syntax = "proto2";
 package snakes;
-option go_package = "./lab4";
+option go_package = "./../lab4/internal/domain";
 
 // Роль узла в топологии связей узлов в пределах игры
 enum NodeRole {
