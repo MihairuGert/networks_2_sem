@@ -5,10 +5,11 @@ import (
 	"image"
 	"image/color"
 	_ "image/jpeg"
+	"os"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
 	"snake-game/internal/infrastructure"
-	"strconv"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -36,6 +37,8 @@ type Game struct {
 	Menu        *ui.Menu
 
 	state gameState
+
+	shutdownTime time.Time
 }
 
 type GameSession struct {
@@ -43,10 +46,19 @@ type GameSession struct {
 	domain.GameConfig
 }
 
+func (g *Game) endGame() {
+	elapsed := time.Since(g.shutdownTime)
+	if elapsed >= 1*time.Second {
+		os.Exit(0)
+	}
+}
+
 func (g *Game) Update() error {
 	switch g.state {
 	case Menu:
 		g.Menu.Update()
+	case End:
+		g.endGame()
 	default:
 		panic("unhandled default case")
 	}
@@ -54,11 +66,13 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, strconv.FormatInt(int64(int(ebiten.ActualFPS())), 10))
+	//ebitenutil.DebugPrint(screen, strconv.FormatInt(int64(int(ebiten.ActualFPS())), 10))
 	screen.Fill(color.Black)
 	switch g.state {
 	case Menu:
 		g.Menu.Draw(screen)
+	case End:
+		ebitenutil.DebugPrint(screen, "That's... the end")
 	default:
 		panic("unhandled default case")
 	}
@@ -79,7 +93,20 @@ func (g *Game) Init() {
 	ebiten.SetWindowIcon(icons)
 
 	g.state = Menu
+	g.setupMenu()
+
+	//renderer := infrastructure.EbitRenderer{ScreenWidth: 640, ScreenHeight: 480}
+	//g.GameSession = &GameSession{
+	//	Grid:       domain.NewGrid(10, 10, 640, 480),
+	//	GameConfig: domain.GameConfig{}}
+	//g.Renderer = &renderer
+	//g.Renderer.DrawGridImage(g.GameSession.Grid)
+
+}
+
+func (g *Game) setupMenu() {
 	g.Menu = ui.NewMenu()
+	var err error
 
 	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, func() { fmt.Print("1") })
 	g.Menu.GetButton(0).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "new_game.png")
@@ -93,18 +120,11 @@ func (g *Game) Init() {
 		panic(err)
 	}
 
-	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, func() { fmt.Print("3") })
+	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, g.handleExit)
 	g.Menu.GetButton(2).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "exit.png")
 	if err != nil {
 		panic(err)
 	}
-	//renderer := infrastructure.EbitRenderer{ScreenWidth: 640, ScreenHeight: 480}
-	//g.GameSession = &GameSession{
-	//	Grid:       domain.NewGrid(10, 10, 640, 480),
-	//	GameConfig: domain.GameConfig{}}
-	//g.Renderer = &renderer
-	//g.Renderer.DrawGridImage(g.GameSession.Grid)
-
 }
 
 func (g *Game) Start() error {
@@ -112,4 +132,9 @@ func (g *Game) Start() error {
 		return err
 	}
 	return nil
+}
+
+func (g *Game) handleExit() {
+	g.state = End
+	g.shutdownTime = time.Now()
 }
