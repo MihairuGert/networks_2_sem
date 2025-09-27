@@ -39,6 +39,7 @@ type Game struct {
 	state gameState
 
 	shutdownTime time.Time
+	finalMsg     *ui.Text
 }
 
 type GameSession struct {
@@ -48,7 +49,8 @@ type GameSession struct {
 
 func (g *Game) endGame() {
 	elapsed := time.Since(g.shutdownTime)
-	if elapsed >= 1*time.Second {
+	g.finalMsg.SetText("This is the end...")
+	if elapsed >= 3*time.Second {
 		os.Exit(0)
 	}
 }
@@ -72,7 +74,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	case Menu:
 		g.Menu.Draw(screen)
 	case End:
-		ebitenutil.DebugPrint(screen, "That's... the end")
+		g.finalMsg.Draw(screen)
 	default:
 		panic("unhandled default case")
 	}
@@ -137,4 +139,5 @@ func (g *Game) Start() error {
 func (g *Game) handleExit() {
 	g.state = End
 	g.shutdownTime = time.Now()
+	g.finalMsg = ui.NewText("This is the end...", 24, 100, 100)
 }
