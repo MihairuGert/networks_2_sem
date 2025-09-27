@@ -7,8 +7,10 @@ type Grid struct {
 	RectWidth  float32
 }
 
-func NewGrid(width, height float32) *Grid {
-	return &Grid{Width: width, Height: height}
+func NewGrid(width, height, screenWidth, screenHeight float32) *Grid {
+	grid := Grid{Width: width, Height: height}
+	grid.getSquareSize(screenWidth, screenHeight)
+	return &grid
 }
 
 func (g *Grid) getSquareSize(screenWidth, screenHeight float32) {

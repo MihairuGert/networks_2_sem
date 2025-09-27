@@ -10,42 +10,39 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// Game implements ebiten.Game interface.
 type Game struct {
-	Grid      *domain.Grid
-	Renderer  *infrastructure.Renderer
-	GridImage *ebiten.Image
+	Renderer    infrastructure.Renderer
+	gameSession *GameSession
 }
 
-// Update proceeds the game state.
-// Update is called every tick (1/60 [s] by default).
+type GameSession struct {
+	Grid *domain.Grid
+	domain.GameConfig
+}
+
 func (g *Game) Update() error {
 	// Write your game's logical update.
 	return nil
 }
 
-// Draw draws the game screen.
-// Draw is called every frame (typically 1/60[s] for 60Hz display).
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, strconv.FormatInt(int64(int(ebiten.ActualFPS())), 10))
-	if g.GridImage != nil {
-		screen.DrawImage(g.GridImage, &ebiten.DrawImageOptions{})
-	}
+	screen.DrawImage(g.Renderer.GetGridImage(), &ebiten.DrawImageOptions{})
 }
 
-// Layout takes the outside size (e.g., the window size) and returns the (logical) screen size.
-// If you don't have to adjust the screen size with the outside size, just return a fixed size.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 320, 240
+	return 640, 480
 }
 
 func main() {
-	game := &Game{Grid: domain.NewGrid(10, 10), Renderer: &infrastructure.Renderer{ScreenWidth: 640, ScreenHeight: 480}}
-	game.GridImage = game.Renderer.GetGridImage(game.Grid)
-	// Specify the window size as you like. Here, a doubled size is specified.
+	renderer := infrastructure.EbitRenderer{ScreenWidth: 640, ScreenHeight: 480}
+	game := &Game{gameSession: &GameSession{
+		Grid:       domain.NewGrid(10, 10, 640, 480),
+		GameConfig: domain.GameConfig{},
+	}, Renderer: &renderer}
+	game.Renderer.DrawGridImage(game.gameSession.Grid)
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("Your game's title")
-	// Call ebiten.RunGame to start your game loop.
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
