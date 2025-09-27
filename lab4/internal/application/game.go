@@ -13,6 +13,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"golang.org/x/image/colornames"
 )
 
 var (
@@ -38,8 +39,10 @@ type Game struct {
 
 	state gameState
 
-	shutdownTime time.Time
-	finalMsg     *ui.Text
+	shutdownTime  time.Time
+	finalMsg      *ui.Text
+	flickerInt    time.Duration
+	lastFlickTime time.Time
 }
 
 type GameSession struct {
@@ -49,7 +52,13 @@ type GameSession struct {
 
 func (g *Game) endGame() {
 	elapsed := time.Since(g.shutdownTime)
-	g.finalMsg.SetText("This is the end...")
+	g.finalMsg.SetText("Goodbye!!")
+	g.finalMsg.SetColor(colornames.White)
+	if time.Since(g.lastFlickTime) >= g.flickerInt {
+		g.finalMsg.SetText("die.")
+		g.finalMsg.SetColor(colornames.Crimson)
+		g.lastFlickTime = time.Now()
+	}
 	if elapsed >= 3*time.Second {
 		os.Exit(0)
 	}
@@ -139,5 +148,7 @@ func (g *Game) Start() error {
 func (g *Game) handleExit() {
 	g.state = End
 	g.shutdownTime = time.Now()
-	g.finalMsg = ui.NewText("This is the end...", 24, 100, 100)
+	g.lastFlickTime = time.Now()
+	g.flickerInt = 25 * time.Millisecond
+	g.finalMsg = ui.NewText("", 24, 100, 100)
 }
