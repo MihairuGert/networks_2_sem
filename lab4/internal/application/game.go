@@ -1,7 +1,9 @@
 package application
 
 import (
+	"fmt"
 	"image"
+	"image/color"
 	_ "image/jpeg"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
@@ -16,6 +18,8 @@ var (
 	screenWidthGlobal  = 640
 	screenHeightGlobal = 480
 )
+
+const texturesPath = "./textures/"
 
 type gameState int
 
@@ -51,6 +55,7 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, strconv.FormatInt(int64(int(ebiten.ActualFPS())), 10))
+	screen.Fill(color.Black)
 	switch g.state {
 	case Menu:
 		g.Menu.Draw(screen)
@@ -66,15 +71,33 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func (g *Game) Init() {
 	ebiten.SetWindowSize(screenWidthGlobal, screenHeightGlobal)
 	ebiten.SetWindowTitle("Mihairu's Snake Game")
-	_, icon, err := ebitenutil.NewImageFromFile("./textures/app_icon.jpeg")
+	_, icon, err := ebitenutil.NewImageFromFile(texturesPath + "app_icon.jpeg")
 	if err != nil {
 		panic(err)
 	}
 	icons := []image.Image{icon}
 	ebiten.SetWindowIcon(icons)
+
 	g.state = Menu
 	g.Menu = ui.NewMenu()
 
+	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, func() { fmt.Print("1") })
+	g.Menu.GetButton(0).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "new_game.png")
+	if err != nil {
+		panic(err)
+	}
+
+	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, func() { fmt.Print("2") })
+	g.Menu.GetButton(1).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "connect.png")
+	if err != nil {
+		panic(err)
+	}
+
+	g.Menu.AddMenuButton(screenWidthGlobal, screenHeightGlobal, func() { fmt.Print("3") })
+	g.Menu.GetButton(2).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "exit.png")
+	if err != nil {
+		panic(err)
+	}
 	//renderer := infrastructure.EbitRenderer{ScreenWidth: 640, ScreenHeight: 480}
 	//g.GameSession = &GameSession{
 	//	Grid:       domain.NewGrid(10, 10, 640, 480),

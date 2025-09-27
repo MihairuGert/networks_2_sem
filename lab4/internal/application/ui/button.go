@@ -9,17 +9,18 @@ import (
 )
 
 type Button struct {
-	Rect    image.Rectangle
-	Text    string
-	OnClick func()
-	hovered bool
-	pressed bool
+	Rect         image.Rectangle
+	NormalImage  *ebiten.Image
+	HoverImage   *ebiten.Image
+	PressedImage *ebiten.Image
+	OnClick      func()
+	hovered      bool
+	pressed      bool
 }
 
-func NewButton(x, y, width, height int, text string, onClick func()) *Button {
+func NewButton(x, y, width, height int, onClick func()) *Button {
 	return &Button{
 		Rect:    image.Rect(x, y, x+width, y+height),
-		Text:    text,
 		OnClick: onClick,
 	}
 }
@@ -42,11 +43,26 @@ func (b *Button) Update() {
 }
 
 func (b *Button) Draw(screen *ebiten.Image) {
-	img := ebiten.NewImage(b.Rect.Dx(), b.Rect.Dy())
-	img.Fill(colornames.Crimson)
+	var img *ebiten.Image
+	switch {
+	case b.pressed && b.PressedImage != nil:
+		img = b.PressedImage
+	case b.hovered && b.HoverImage != nil:
+		img = b.HoverImage
+	default:
+		if b.NormalImage != nil {
+			img = b.NormalImage
+		} else {
+			img = ebiten.NewImage(b.Rect.Dx(), b.Rect.Dy())
+			img.Fill(colornames.Crimson)
+		}
+	}
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(b.Rect.Min.X), float64(b.Rect.Min.Y))
-	screen.DrawImage(img, op)
+	if img != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(b.Rect.Dx())/float64(img.Bounds().Dx()), float64(b.Rect.Dy())/float64(img.Bounds().Dy()))
+		op.GeoM.Translate(float64(b.Rect.Min.X), float64(b.Rect.Min.Y))
+		screen.DrawImage(img, op)
+	}
 
 }
