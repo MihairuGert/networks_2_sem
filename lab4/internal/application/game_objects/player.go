@@ -12,6 +12,14 @@ type Player struct {
 	velocity int32 // cells/sec.
 }
 
+func (player *Player) GetPoints() []*domain.GameState_Coord {
+	return player.snake.Points
+}
+
+func (player *Player) SetPoints(points []*domain.GameState_Coord) {
+	player.snake.Points = points
+}
+
 func NewPlayer(x, y int32) *Player {
 	player := &Player{}
 	player.velocity = 1

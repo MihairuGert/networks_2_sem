@@ -17,6 +17,14 @@ type Controller struct {
 	updatePeriod time.Duration
 }
 
+func (c *Controller) GetPoints() []*domain.GameState_Coord {
+	return c.player.GetPoints()
+}
+
+func (c *Controller) SetPoints(points []*domain.GameState_Coord) {
+	c.player.SetPoints(points)
+}
+
 func (c *Controller) SetPlayer(x, y int32) {
 	c.player = game_objects.NewPlayer(x, y)
 	c.currentMovement = domain.Direction_RIGHT

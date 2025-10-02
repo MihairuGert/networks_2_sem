@@ -58,6 +58,25 @@ func (g *Game) endGame() {
 	}
 }
 
+func (g *Game) checkBorders() {
+	for i, _ := range g.controllers {
+		points := g.controllers[i].GetPoints()
+		if int(*points[0].X) >= g.GameSession.Grid.Width {
+			*points[0].X = 0
+		}
+		if int(*points[0].X) < 0 {
+			*points[0].X = int32(g.GameSession.Grid.Width - 1)
+		}
+		if int(*points[0].Y) >= g.GameSession.Grid.Height {
+			*points[0].Y = 0
+		}
+		if int(*points[0].Y) < 0 {
+			*points[0].Y = int32(g.GameSession.Grid.Height - 1)
+		}
+		g.controllers[i].SetPoints(points)
+	}
+}
+
 func (g *Game) Update() error {
 	switch g.state {
 	case Menu:
@@ -67,6 +86,7 @@ func (g *Game) Update() error {
 		for i, _ := range g.controllers {
 			g.controllers[i].Update()
 		}
+		g.checkBorders()
 	case Connect:
 
 	case End:
