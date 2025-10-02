@@ -3,15 +3,28 @@ package ui
 import (
 	"snake-game/internal/application/game_objects"
 	"snake-game/internal/domain"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Controller struct {
 	player *game_objects.Player
+
+	currentMovement domain.Direction
+
+	lastUpdate   time.Time
+	updatePeriod time.Duration
 }
 
-func (c *Controller) Move(currentMovement []domain.Direction) {
+func (c *Controller) SetPlayer(x, y int32) {
+	c.player = game_objects.NewPlayer(x, y)
+	c.currentMovement = domain.Direction_RIGHT
+	c.lastUpdate = time.Now()
+	c.updatePeriod = time.Millisecond * 100
+}
+
+func (c *Controller) Move(currentMovement domain.Direction) {
 	c.player.Move(currentMovement)
 }
 
@@ -21,16 +34,22 @@ func (c *Controller) Kill() {
 }
 
 func (c *Controller) Update() {
-	var currentMovement []domain.Direction
 	switch {
 	case ebiten.IsKeyPressed(ebiten.KeyW):
-		currentMovement = append(currentMovement, domain.Direction_UP)
+		c.currentMovement = domain.Direction_UP
 	case ebiten.IsKeyPressed(ebiten.KeyA):
-		currentMovement = append(currentMovement, domain.Direction_LEFT)
+		c.currentMovement = domain.Direction_LEFT
 	case ebiten.IsKeyPressed(ebiten.KeyD):
-		currentMovement = append(currentMovement, domain.Direction_RIGHT)
+		c.currentMovement = domain.Direction_RIGHT
 	case ebiten.IsKeyPressed(ebiten.KeyS):
-		currentMovement = append(currentMovement, domain.Direction_DOWN)
+		c.currentMovement = domain.Direction_DOWN
 	}
-	c.Move(currentMovement)
+	if time.Since(c.lastUpdate) >= c.updatePeriod {
+		c.lastUpdate = time.Now()
+		c.Move(c.currentMovement)
+	}
+}
+
+func (c *Controller) DrawPlayer(screen *ebiten.Image, grid *domain.Grid) {
+	c.player.Draw(screen, grid)
 }

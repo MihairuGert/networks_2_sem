@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	screenWidthGlobal  = 640
-	screenHeightGlobal = 480
+	screenWidthGlobal  = 960
+	screenHeightGlobal = 720
 )
 
 const texturesPath = "./textures/"
@@ -34,6 +34,7 @@ type Game struct {
 	Renderer    *ui.GameSessionRenderer
 	GameSession *domain.GameSession
 	Menu        *ui.Menu
+	controllers []ui.Controller
 
 	state gameState
 
@@ -63,6 +64,9 @@ func (g *Game) Update() error {
 		g.Menu.Update()
 	case Play:
 		g.Renderer.Update()
+		for _, c := range g.controllers {
+			c.Update()
+		}
 	case Connect:
 
 	case End:
@@ -81,6 +85,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.Menu.Draw(screen)
 	case Play:
 		g.Renderer.Draw(screen, g.GameSession)
+		for _, c := range g.controllers {
+			c.DrawPlayer(screen, g.GameSession.Grid)
+		}
 	case Connect:
 
 	case End:
@@ -106,6 +113,10 @@ func (g *Game) Init() {
 
 	g.state = Menu
 	g.setupMenu()
+}
+
+func (g *Game) addPlayer(c ui.Controller) {
+	g.controllers = append(g.controllers, c)
 }
 
 func (g *Game) setupMenu() {
@@ -146,6 +157,10 @@ func (g *Game) handleNewGame() {
 		GameConfig: domain.GameConfig{}}
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
+
+	controller := ui.Controller{}
+	controller.SetPlayer(1, 1)
+	g.addPlayer(controller)
 }
 
 func (g *Game) handleConnect() {
