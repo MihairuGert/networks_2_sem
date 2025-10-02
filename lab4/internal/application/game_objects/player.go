@@ -3,7 +3,6 @@ package game_objects
 import (
 	"image/color"
 	"snake-game/internal/domain"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,9 +10,6 @@ import (
 type Player struct {
 	snake    domain.GameState_Snake
 	velocity int32 // cells/sec.
-
-	lastUpdate   time.Time
-	updatePeriod time.Duration
 }
 
 func NewPlayer(x, y int32) *Player {
@@ -33,9 +29,6 @@ func NewPlayer(x, y int32) *Player {
 	player.snake = domain.GameState_Snake{Points: points}
 	curDir := domain.Direction_RIGHT
 	player.snake.HeadDirection = &curDir
-
-	player.lastUpdate = time.Now()
-	player.updatePeriod = time.Millisecond * 300
 
 	return player
 }

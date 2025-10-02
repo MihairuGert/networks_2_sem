@@ -21,11 +21,11 @@ func (c *Controller) SetPlayer(x, y int32) {
 	c.player = game_objects.NewPlayer(x, y)
 	c.currentMovement = domain.Direction_RIGHT
 	c.lastUpdate = time.Now()
-	c.updatePeriod = time.Millisecond * 100
+	c.updatePeriod = time.Millisecond * 300
 }
 
-func (c *Controller) Move(currentMovement domain.Direction) {
-	c.player.Move(currentMovement)
+func (c *Controller) Move() {
+	c.player.Move(c.currentMovement)
 }
 
 func (c *Controller) Kill() {
@@ -44,9 +44,10 @@ func (c *Controller) Update() {
 	case ebiten.IsKeyPressed(ebiten.KeyS):
 		c.currentMovement = domain.Direction_DOWN
 	}
+
 	if time.Since(c.lastUpdate) >= c.updatePeriod {
 		c.lastUpdate = time.Now()
-		c.Move(c.currentMovement)
+		c.Move()
 	}
 }
 

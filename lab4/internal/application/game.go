@@ -64,8 +64,8 @@ func (g *Game) Update() error {
 		g.Menu.Update()
 	case Play:
 		g.Renderer.Update()
-		for _, c := range g.controllers {
-			c.Update()
+		for i, _ := range g.controllers {
+			g.controllers[i].Update()
 		}
 	case Connect:
 
