@@ -38,10 +38,14 @@ type Game struct {
 
 	state gameState
 
+	// Used in fancy exit window.
 	shutdownTime  time.Time
 	finalMsg      *ui.Text
 	flickerInt    time.Duration
 	lastFlickTime time.Time
+
+	foodSpawnInt      time.Duration
+	lastFoodSpawnTime time.Time
 }
 
 func (g *Game) endGame() {
@@ -81,6 +85,35 @@ func (g *Game) checkBorders() {
 	}
 }
 
+func (g *Game) checkFood() {
+	for i, _ := range g.controllers {
+		for k, food := range g.GameSession.Foods {
+			points := g.controllers[i].GetPoints()
+			head := points[0]
+			curx := *head.X
+			cury := *head.Y
+			for j := 1; j < len(points); j++ {
+				if (curx == *food.X) && (cury == *food.Y) {
+					// here logic of growth
+					g.controllers[i].GrowPlayer()
+					// careful! hz how slices work in go
+					g.GameSession.Foods = append(g.GameSession.Foods[:k], g.GameSession.Foods[k+1:]...)
+					break
+				}
+				curx = curx + *points[i].X
+				cury = cury + *points[i].Y
+			}
+		}
+	}
+}
+
+func (g *Game) addFood() {
+	if time.Since(g.lastFoodSpawnTime) >= g.foodSpawnInt {
+		g.lastFoodSpawnTime = time.Now()
+		g.GameSession.GenerateFood(1)
+	}
+}
+
 func (g *Game) Update() error {
 	switch g.state {
 	case Menu:
@@ -91,6 +124,8 @@ func (g *Game) Update() error {
 			g.controllers[i].Update()
 		}
 		g.checkBorders()
+		g.checkFood()
+		g.addFood()
 	case Connect:
 
 	case End:
@@ -112,6 +147,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		for _, c := range g.controllers {
 			c.DrawPlayer(screen, g.GameSession.Grid)
 		}
+		g.drawFood(screen)
 	case Connect:
 
 	case End:
@@ -134,6 +170,9 @@ func (g *Game) Init() {
 	}
 	icons := []image.Image{icon}
 	ebiten.SetWindowIcon(icons)
+
+	g.lastFoodSpawnTime = time.Now()
+	g.foodSpawnInt = time.Second * 3
 
 	g.state = Menu
 	g.setupMenu()
@@ -177,7 +216,7 @@ func (g *Game) handleNewGame() {
 	g.state = Play
 	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
 	g.GameSession = &domain.GameSession{
-		Grid:       domain.NewGrid(10, 10, float32(screenWidthGlobal), float32(screenHeightGlobal)),
+		Grid:       domain.NewGrid(20, 20, float32(screenWidthGlobal), float32(screenHeightGlobal)),
 		GameConfig: domain.GameConfig{}}
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
@@ -197,4 +236,18 @@ func (g *Game) handleExit() {
 	g.lastFlickTime = time.Now()
 	g.flickerInt = 25 * time.Millisecond
 	g.finalMsg = ui.NewText("", 24, 100, 100)
+}
+
+func (g *Game) drawFood(screen *ebiten.Image) {
+	for _, Food := range g.GameSession.Foods {
+		rectImage := ebiten.NewImage(int(g.GameSession.Grid.RectWidth), int(g.GameSession.Grid.RectHeight))
+		rectImage.Fill(colornames.Darkred)
+
+		curX := float64(*Food.X) * float64(g.GameSession.Grid.RectWidth)
+		curY := float64(*Food.Y) * float64(g.GameSession.Grid.RectHeight)
+
+		opts := &ebiten.DrawImageOptions{}
+		opts.GeoM.Translate(curX, curY)
+		screen.DrawImage(rectImage, opts)
+	}
 }

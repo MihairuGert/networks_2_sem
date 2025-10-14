@@ -25,6 +25,13 @@ func (c *Controller) SetPoints(points []*domain.GameState_Coord) {
 	c.player.SetPoints(points)
 }
 
+func (c *Controller) GrowPlayer() {
+	points := c.player.GetPoints()
+	x := *points[len(points)-1].X
+	y := *points[len(points)-1].Y
+	c.SetPoints(append(points, &domain.GameState_Coord{X: &x, Y: &y}))
+}
+
 func (c *Controller) SetPlayer(x, y int32) {
 	c.player = game_objects.NewPlayer(x, y)
 	c.currentMovement = domain.Direction_RIGHT
