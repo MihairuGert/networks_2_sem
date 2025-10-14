@@ -63,15 +63,19 @@ func (g *Game) checkBorders() {
 		points := g.controllers[i].GetPoints()
 		if int(*points[0].X) >= g.GameSession.Grid.Width {
 			*points[0].X = 0
+			*points[1].X = int32(g.GameSession.Grid.Width - 1)
 		}
 		if int(*points[0].X) < 0 {
+			*points[1].X = -int32(g.GameSession.Grid.Width - 1)
 			*points[0].X = int32(g.GameSession.Grid.Width - 1)
 		}
 		if int(*points[0].Y) >= g.GameSession.Grid.Height {
 			*points[0].Y = 0
+			*points[1].Y = int32(g.GameSession.Grid.Height - 1)
 		}
 		if int(*points[0].Y) < 0 {
 			*points[0].Y = int32(g.GameSession.Grid.Height - 1)
+			*points[1].Y = -int32(g.GameSession.Grid.Height - 1)
 		}
 		g.controllers[i].SetPoints(points)
 	}
