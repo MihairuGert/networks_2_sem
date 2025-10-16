@@ -1,10 +1,12 @@
 package application
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"os"
+	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"golang.org/x/image/colornames"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -35,6 +38,8 @@ type Game struct {
 	GameSession *domain.GameSession
 	Menu        *ui.Menu
 	controllers []ui.Controller
+
+	networkManager network.NetworkManager
 
 	state gameState
 
@@ -249,5 +254,32 @@ func (g *Game) drawFood(screen *ebiten.Image) {
 		opts := &ebiten.DrawImageOptions{}
 		opts.GeoM.Translate(curX, curY)
 		screen.DrawImage(rectImage, opts)
+	}
+}
+
+func (g *Game) StartAnnouncement() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		fmt.Println("sending announcement")
+		gameInfo := []*domain.GameAnnouncement{{
+			Players:  nil,
+			Config:   nil,
+			CanJoin:  nil,
+			GameName: nil,
+		}}
+
+		announcementMsg := domain.GameMessage_AnnouncementMsg{
+			Games: gameInfo,
+		}
+		data, err := proto.Marshal(&announcementMsg)
+		if err != nil {
+			panic(err)
+		}
+		err = g.networkManager.SendMsg(g.networkManager.MulticastSocket, data)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
