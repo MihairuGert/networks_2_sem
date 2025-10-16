@@ -10,6 +10,7 @@ import (
 
 type Controller struct {
 	player *game_objects.Player
+	domain.GamePlayer
 
 	currentMovement domain.Direction
 
@@ -27,9 +28,9 @@ func (c *Controller) SetPoints(points []*domain.GameState_Coord) {
 
 func (c *Controller) GrowPlayer() {
 	points := c.player.GetPoints()
-	x := *points[len(points)-1].X
-	y := *points[len(points)-1].Y
-	c.SetPoints(append(points, &domain.GameState_Coord{X: &x, Y: &y}))
+	x := points[len(points)-1].X
+	y := points[len(points)-1].Y
+	c.SetPoints(append(points, &domain.GameState_Coord{X: x, Y: y}))
 }
 
 func (c *Controller) SetPlayer(x, y int32) {

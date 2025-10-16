@@ -69,16 +69,6 @@ func (x NodeRole) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Do not use.
-func (x *NodeRole) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = NodeRole(num)
-	return nil
-}
-
 // Deprecated: Use NodeRole.Descriptor instead.
 func (NodeRole) EnumDescriptor() ([]byte, []int) {
 	return file_snakes_proto_rawDescGZIP(), []int{0}
@@ -126,16 +116,6 @@ func (x PlayerType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Do not use.
-func (x *PlayerType) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = PlayerType(num)
-	return nil
-}
-
 // Deprecated: Use PlayerType.Descriptor instead.
 func (PlayerType) EnumDescriptor() ([]byte, []int) {
 	return file_snakes_proto_rawDescGZIP(), []int{1}
@@ -144,25 +124,25 @@ func (PlayerType) EnumDescriptor() ([]byte, []int) {
 type Direction int32
 
 const (
-	Direction_UP    Direction = 1 // Вверх (в отрицательном направлении оси y)
-	Direction_DOWN  Direction = 2 // Вниз (в положительном направлении оси y)
-	Direction_LEFT  Direction = 3 // Влево (в отрицательном направлении оси x)
-	Direction_RIGHT Direction = 4 // Вправо (в положительном направлении оси x)
+	Direction_UP    Direction = 0 // Вверх (в отрицательном направлении оси y)
+	Direction_DOWN  Direction = 1 // Вниз (в положительном направлении оси y)
+	Direction_LEFT  Direction = 2 // Влево (в отрицательном направлении оси x)
+	Direction_RIGHT Direction = 3 // Вправо (в положительном направлении оси x)
 )
 
 // Enum value maps for Direction.
 var (
 	Direction_name = map[int32]string{
-		1: "UP",
-		2: "DOWN",
-		3: "LEFT",
-		4: "RIGHT",
+		0: "UP",
+		1: "DOWN",
+		2: "LEFT",
+		3: "RIGHT",
 	}
 	Direction_value = map[string]int32{
-		"UP":    1,
-		"DOWN":  2,
-		"LEFT":  3,
-		"RIGHT": 4,
+		"UP":    0,
+		"DOWN":  1,
+		"LEFT":  2,
+		"RIGHT": 3,
 	}
 )
 
@@ -186,16 +166,6 @@ func (Direction) Type() protoreflect.EnumType {
 
 func (x Direction) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Do not use.
-func (x *Direction) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = Direction(num)
-	return nil
 }
 
 // Deprecated: Use Direction.Descriptor instead.
@@ -245,16 +215,6 @@ func (x GameState_Snake_SnakeState) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Do not use.
-func (x *GameState_Snake_SnakeState) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = GameState_Snake_SnakeState(num)
-	return nil
-}
-
 // Deprecated: Use GameState_Snake_SnakeState.Descriptor instead.
 func (GameState_Snake_SnakeState) EnumDescriptor() ([]byte, []int) {
 	return file_snakes_proto_rawDescGZIP(), []int{3, 1, 0}
@@ -263,21 +223,16 @@ func (GameState_Snake_SnakeState) EnumDescriptor() ([]byte, []int) {
 // Игрок
 type GamePlayer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          *string                `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`                               // Имя игрока (для отображения в интерфейсе)
-	Id            *int32                 `protobuf:"varint,2,req,name=id" json:"id,omitempty"`                                  // Уникальный идентификатор игрока в пределах игры
-	IpAddress     *string                `protobuf:"bytes,3,opt,name=ip_address,json=ipAddress" json:"ip_address,omitempty"`    // IPv4 или IPv6 адрес игрока в виде строки. Отсутствует в описании игрока-отправителя сообщения
-	Port          *int32                 `protobuf:"varint,4,opt,name=port" json:"port,omitempty"`                              // Порт UDP-сокета игрока. Отсутствует в описании игрока-отправителя сообщения
-	Role          *NodeRole              `protobuf:"varint,5,req,name=role,enum=snakes.NodeRole" json:"role,omitempty"`         // Роль узла в топологии
-	Type          *PlayerType            `protobuf:"varint,6,opt,name=type,enum=snakes.PlayerType,def=0" json:"type,omitempty"` // Тип игрока
-	Score         *int32                 `protobuf:"varint,7,req,name=score" json:"score,omitempty"`                            // Число очков, которые набрал игрок
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                            // Имя игрока (для отображения в интерфейсе)
+	Id            int32                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`                               // Уникальный идентификатор игрока в пределах игры
+	IpAddress     string                 `protobuf:"bytes,3,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"` // IPv4 или IPv6 адрес игрока в виде строки. Отсутствует в описании игрока-отправителя сообщения
+	Port          int32                  `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`                           // Порт UDP-сокета игрока. Отсутствует в описании игрока-отправителя сообщения
+	Role          NodeRole               `protobuf:"varint,5,opt,name=role,proto3,enum=snakes.NodeRole" json:"role,omitempty"`      // Роль узла в топологии
+	Type          PlayerType             `protobuf:"varint,6,opt,name=type,proto3,enum=snakes.PlayerType" json:"type,omitempty"`    // Тип игрока
+	Score         int32                  `protobuf:"varint,7,opt,name=score,proto3" json:"score,omitempty"`                         // Число очков, которые набрал игрок
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GamePlayer fields.
-const (
-	Default_GamePlayer_Type = PlayerType_HUMAN
-)
 
 func (x *GamePlayer) Reset() {
 	*x = GamePlayer{}
@@ -310,50 +265,50 @@ func (*GamePlayer) Descriptor() ([]byte, []int) {
 }
 
 func (x *GamePlayer) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
+	if x != nil {
+		return x.Name
 	}
 	return ""
 }
 
 func (x *GamePlayer) GetId() int32 {
-	if x != nil && x.Id != nil {
-		return *x.Id
+	if x != nil {
+		return x.Id
 	}
 	return 0
 }
 
 func (x *GamePlayer) GetIpAddress() string {
-	if x != nil && x.IpAddress != nil {
-		return *x.IpAddress
+	if x != nil {
+		return x.IpAddress
 	}
 	return ""
 }
 
 func (x *GamePlayer) GetPort() int32 {
-	if x != nil && x.Port != nil {
-		return *x.Port
+	if x != nil {
+		return x.Port
 	}
 	return 0
 }
 
 func (x *GamePlayer) GetRole() NodeRole {
-	if x != nil && x.Role != nil {
-		return *x.Role
+	if x != nil {
+		return x.Role
 	}
 	return NodeRole_NORMAL
 }
 
 func (x *GamePlayer) GetType() PlayerType {
-	if x != nil && x.Type != nil {
-		return *x.Type
+	if x != nil {
+		return x.Type
 	}
-	return Default_GamePlayer_Type
+	return PlayerType_HUMAN
 }
 
 func (x *GamePlayer) GetScore() int32 {
-	if x != nil && x.Score != nil {
-		return *x.Score
+	if x != nil {
+		return x.Score
 	}
 	return 0
 }
@@ -361,21 +316,13 @@ func (x *GamePlayer) GetScore() int32 {
 // Параметры идущей игры (не должны меняться в процессе игры)
 type GameConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Width         *int32                 `protobuf:"varint,1,opt,name=width,def=40" json:"width,omitempty"`                                       // Ширина поля в клетках (от 10 до 100)
-	Height        *int32                 `protobuf:"varint,2,opt,name=height,def=30" json:"height,omitempty"`                                     // Высота поля в клетках (от 10 до 100)
-	FoodStatic    *int32                 `protobuf:"varint,3,opt,name=food_static,json=foodStatic,def=1" json:"food_static,omitempty"`            // Количество клеток с едой, независимо от числа игроков (от 0 до 100)
-	StateDelayMs  *int32                 `protobuf:"varint,5,opt,name=state_delay_ms,json=stateDelayMs,def=1000" json:"state_delay_ms,omitempty"` // Задержка между ходами (сменой состояний) в игре, в миллисекундах (от 100 до 3000)
+	Width         int32                  `protobuf:"varint,1,opt,name=width,proto3" json:"width,omitempty"`                                     // Ширина поля в клетках (от 10 до 100)
+	Height        int32                  `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`                                   // Высота поля в клетках (от 10 до 100)
+	FoodStatic    int32                  `protobuf:"varint,3,opt,name=food_static,json=foodStatic,proto3" json:"food_static,omitempty"`         // Количество клеток с едой, независимо от числа игроков (от 0 до 100)
+	StateDelayMs  int32                  `protobuf:"varint,5,opt,name=state_delay_ms,json=stateDelayMs,proto3" json:"state_delay_ms,omitempty"` // Задержка между ходами (сменой состояний) в игре, в миллисекундах (от 100 до 3000)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GameConfig fields.
-const (
-	Default_GameConfig_Width        = int32(40)
-	Default_GameConfig_Height       = int32(30)
-	Default_GameConfig_FoodStatic   = int32(1)
-	Default_GameConfig_StateDelayMs = int32(1000)
-)
 
 func (x *GameConfig) Reset() {
 	*x = GameConfig{}
@@ -408,37 +355,37 @@ func (*GameConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameConfig) GetWidth() int32 {
-	if x != nil && x.Width != nil {
-		return *x.Width
+	if x != nil {
+		return x.Width
 	}
-	return Default_GameConfig_Width
+	return 0
 }
 
 func (x *GameConfig) GetHeight() int32 {
-	if x != nil && x.Height != nil {
-		return *x.Height
+	if x != nil {
+		return x.Height
 	}
-	return Default_GameConfig_Height
+	return 0
 }
 
 func (x *GameConfig) GetFoodStatic() int32 {
-	if x != nil && x.FoodStatic != nil {
-		return *x.FoodStatic
+	if x != nil {
+		return x.FoodStatic
 	}
-	return Default_GameConfig_FoodStatic
+	return 0
 }
 
 func (x *GameConfig) GetStateDelayMs() int32 {
-	if x != nil && x.StateDelayMs != nil {
-		return *x.StateDelayMs
+	if x != nil {
+		return x.StateDelayMs
 	}
-	return Default_GameConfig_StateDelayMs
+	return 0
 }
 
 // Игроки конкретной игры
 type GamePlayers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Players       []*GamePlayer          `protobuf:"bytes,1,rep,name=players" json:"players,omitempty"` // Список всех игроков
+	Players       *GamePlayer            `protobuf:"bytes,1,opt,name=players,proto3" json:"players,omitempty"` // Список всех игроков
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -473,7 +420,7 @@ func (*GamePlayers) Descriptor() ([]byte, []int) {
 	return file_snakes_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GamePlayers) GetPlayers() []*GamePlayer {
+func (x *GamePlayers) GetPlayers() *GamePlayer {
 	if x != nil {
 		return x.Players
 	}
@@ -483,10 +430,10 @@ func (x *GamePlayers) GetPlayers() []*GamePlayer {
 // Текущее состояние игрового поля
 type GameState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StateOrder    *int32                 `protobuf:"varint,1,req,name=state_order,json=stateOrder" json:"state_order,omitempty"` // Порядковый номер состояния, уникален в пределах игры, монотонно возрастает
-	Snakes        []*GameState_Snake     `protobuf:"bytes,2,rep,name=snakes" json:"snakes,omitempty"`                            // Список змей
-	Foods         []*GameState_Coord     `protobuf:"bytes,3,rep,name=foods" json:"foods,omitempty"`                              // Список клеток с едой
-	Players       *GamePlayers           `protobuf:"bytes,4,req,name=players" json:"players,omitempty"`                          // Актуальнейший список игроков
+	StateOrder    int32                  `protobuf:"varint,1,opt,name=state_order,json=stateOrder,proto3" json:"state_order,omitempty"` // Порядковый номер состояния, уникален в пределах игры, монотонно возрастает
+	Snakes        []*GameState_Snake     `protobuf:"bytes,2,rep,name=snakes,proto3" json:"snakes,omitempty"`                            // Список змей
+	Foods         []*GameState_Coord     `protobuf:"bytes,3,rep,name=foods,proto3" json:"foods,omitempty"`                              // Список клеток с едой
+	Players       *GamePlayers           `protobuf:"bytes,4,opt,name=players,proto3" json:"players,omitempty"`                          // Актуальнейший список игроков
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,8 +469,8 @@ func (*GameState) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameState) GetStateOrder() int32 {
-	if x != nil && x.StateOrder != nil {
-		return *x.StateOrder
+	if x != nil {
+		return x.StateOrder
 	}
 	return 0
 }
@@ -551,18 +498,13 @@ func (x *GameState) GetPlayers() *GamePlayers {
 
 type GameAnnouncement struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Players       *GamePlayers           `protobuf:"bytes,1,req,name=players" json:"players,omitempty"`                       // Текущие игроки
-	Config        *GameConfig            `protobuf:"bytes,2,req,name=config" json:"config,omitempty"`                         // Параметры игры
-	CanJoin       *bool                  `protobuf:"varint,3,opt,name=can_join,json=canJoin,def=1" json:"can_join,omitempty"` // Можно ли новому игроку присоединиться к игре (есть ли место на поле)
-	GameName      *string                `protobuf:"bytes,4,req,name=game_name,json=gameName" json:"game_name,omitempty"`     // Глобально уникальное имя игры, например "my game"
+	Players       *GamePlayers           `protobuf:"bytes,1,opt,name=players,proto3" json:"players,omitempty"`                   // Текущие игроки
+	Config        *GameConfig            `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`                     // Параметры игры
+	CanJoin       bool                   `protobuf:"varint,3,opt,name=can_join,json=canJoin,proto3" json:"can_join,omitempty"`   // Можно ли новому игроку присоединиться к игре (есть ли место на поле)
+	GameName      string                 `protobuf:"bytes,4,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"` // Глобально уникальное имя игры, например "my game"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GameAnnouncement fields.
-const (
-	Default_GameAnnouncement_CanJoin = bool(true)
-)
 
 func (x *GameAnnouncement) Reset() {
 	*x = GameAnnouncement{}
@@ -609,15 +551,15 @@ func (x *GameAnnouncement) GetConfig() *GameConfig {
 }
 
 func (x *GameAnnouncement) GetCanJoin() bool {
-	if x != nil && x.CanJoin != nil {
-		return *x.CanJoin
+	if x != nil {
+		return x.CanJoin
 	}
-	return Default_GameAnnouncement_CanJoin
+	return false
 }
 
 func (x *GameAnnouncement) GetGameName() string {
-	if x != nil && x.GameName != nil {
-		return *x.GameName
+	if x != nil {
+		return x.GameName
 	}
 	return ""
 }
@@ -625,9 +567,9 @@ func (x *GameAnnouncement) GetGameName() string {
 // Общий формат любого UDP-сообщения
 type GameMessage struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
-	MsgSeq     *int64                 `protobuf:"varint,1,req,name=msg_seq,json=msgSeq" json:"msg_seq,omitempty"`              // Порядковый номер сообщения, уникален для отправителя в пределах игры, монотонно возрастает
-	SenderId   *int32                 `protobuf:"varint,10,opt,name=sender_id,json=senderId" json:"sender_id,omitempty"`       // ID игрока-отправителя этого сообщения (обязательно для AckMsg и RoleChangeMsg)
-	ReceiverId *int32                 `protobuf:"varint,11,opt,name=receiver_id,json=receiverId" json:"receiver_id,omitempty"` // ID игрока-получателя этого сообщения (обязательно для AckMsg и RoleChangeMsg)
+	MsgSeq     int64                  `protobuf:"varint,1,opt,name=msg_seq,json=msgSeq,proto3" json:"msg_seq,omitempty"`              // Порядковый номер сообщения, уникален для отправителя в пределах игры, монотонно возрастает
+	SenderId   int32                  `protobuf:"varint,10,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`       // ID игрока-отправителя этого сообщения (обязательно для AckMsg и RoleChangeMsg)
+	ReceiverId int32                  `protobuf:"varint,11,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"` // ID игрока-получателя этого сообщения (обязательно для AckMsg и RoleChangeMsg)
 	// Тип сообщения
 	//
 	// Types that are valid to be assigned to Type:
@@ -677,22 +619,22 @@ func (*GameMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameMessage) GetMsgSeq() int64 {
-	if x != nil && x.MsgSeq != nil {
-		return *x.MsgSeq
+	if x != nil {
+		return x.MsgSeq
 	}
 	return 0
 }
 
 func (x *GameMessage) GetSenderId() int32 {
-	if x != nil && x.SenderId != nil {
-		return *x.SenderId
+	if x != nil {
+		return x.SenderId
 	}
 	return 0
 }
 
 func (x *GameMessage) GetReceiverId() int32 {
-	if x != nil && x.ReceiverId != nil {
-		return *x.ReceiverId
+	if x != nil {
+		return x.ReceiverId
 	}
 	return 0
 }
@@ -790,39 +732,39 @@ type isGameMessage_Type interface {
 }
 
 type GameMessage_Ping struct {
-	Ping *GameMessage_PingMsg `protobuf:"bytes,2,opt,name=ping,oneof"`
+	Ping *GameMessage_PingMsg `protobuf:"bytes,2,opt,name=ping,proto3,oneof"`
 }
 
 type GameMessage_Steer struct {
-	Steer *GameMessage_SteerMsg `protobuf:"bytes,3,opt,name=steer,oneof"`
+	Steer *GameMessage_SteerMsg `protobuf:"bytes,3,opt,name=steer,proto3,oneof"`
 }
 
 type GameMessage_Ack struct {
-	Ack *GameMessage_AckMsg `protobuf:"bytes,4,opt,name=ack,oneof"`
+	Ack *GameMessage_AckMsg `protobuf:"bytes,4,opt,name=ack,proto3,oneof"`
 }
 
 type GameMessage_State struct {
-	State *GameMessage_StateMsg `protobuf:"bytes,5,opt,name=state,oneof"`
+	State *GameMessage_StateMsg `protobuf:"bytes,5,opt,name=state,proto3,oneof"`
 }
 
 type GameMessage_Announcement struct {
-	Announcement *GameMessage_AnnouncementMsg `protobuf:"bytes,6,opt,name=announcement,oneof"`
+	Announcement *GameMessage_AnnouncementMsg `protobuf:"bytes,6,opt,name=announcement,proto3,oneof"`
 }
 
 type GameMessage_Join struct {
-	Join *GameMessage_JoinMsg `protobuf:"bytes,7,opt,name=join,oneof"`
+	Join *GameMessage_JoinMsg `protobuf:"bytes,7,opt,name=join,proto3,oneof"`
 }
 
 type GameMessage_Error struct {
-	Error *GameMessage_ErrorMsg `protobuf:"bytes,8,opt,name=error,oneof"`
+	Error *GameMessage_ErrorMsg `protobuf:"bytes,8,opt,name=error,proto3,oneof"`
 }
 
 type GameMessage_RoleChange struct {
-	RoleChange *GameMessage_RoleChangeMsg `protobuf:"bytes,9,opt,name=role_change,json=roleChange,oneof"`
+	RoleChange *GameMessage_RoleChangeMsg `protobuf:"bytes,9,opt,name=role_change,json=roleChange,proto3,oneof"`
 }
 
 type GameMessage_Discover struct {
-	Discover *GameMessage_DiscoverMsg `protobuf:"bytes,12,opt,name=discover,oneof"`
+	Discover *GameMessage_DiscoverMsg `protobuf:"bytes,12,opt,name=discover,proto3,oneof"`
 }
 
 func (*GameMessage_Ping) isGameMessage_Type() {}
@@ -848,17 +790,11 @@ func (*GameMessage_Discover) isGameMessage_Type() {}
 // Направление смещения задаётся знаком чисел.
 type GameState_Coord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	X             *int32                 `protobuf:"zigzag32,1,opt,name=x,def=0" json:"x,omitempty"` // По горизонтальной оси, положительное направление - вправо
-	Y             *int32                 `protobuf:"zigzag32,2,opt,name=y,def=0" json:"y,omitempty"` // По вертикальной оси, положительное направление - вниз
+	X             int32                  `protobuf:"zigzag32,1,opt,name=x,proto3" json:"x,omitempty"` // По горизонтальной оси, положительное направление - вправо
+	Y             int32                  `protobuf:"zigzag32,2,opt,name=y,proto3" json:"y,omitempty"` // По вертикальной оси, положительное направление - вниз
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GameState_Coord fields.
-const (
-	Default_GameState_Coord_X = int32(0)
-	Default_GameState_Coord_Y = int32(0)
-)
 
 func (x *GameState_Coord) Reset() {
 	*x = GameState_Coord{}
@@ -891,37 +827,32 @@ func (*GameState_Coord) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameState_Coord) GetX() int32 {
-	if x != nil && x.X != nil {
-		return *x.X
+	if x != nil {
+		return x.X
 	}
-	return Default_GameState_Coord_X
+	return 0
 }
 
 func (x *GameState_Coord) GetY() int32 {
-	if x != nil && x.Y != nil {
-		return *x.Y
+	if x != nil {
+		return x.Y
 	}
-	return Default_GameState_Coord_Y
+	return 0
 }
 
 // Змея
 type GameState_Snake struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	PlayerId *int32                 `protobuf:"varint,1,req,name=player_id,json=playerId" json:"player_id,omitempty"` // Идентификатор игрока-владельца змеи, см. GamePlayer.id
+	PlayerId int32                  `protobuf:"varint,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"` // Идентификатор игрока-владельца змеи, см. GamePlayer.id
 	// Список "ключевых" точек змеи. Первая точка хранит координаты головы змеи.
 	// Каждая следующая - смещение следующей "ключевой" точки относительно предыдущей,
 	// в частности последняя точка хранит смещение хвоста змеи относительно предыдущей "ключевой" точки.
-	Points        []*GameState_Coord          `protobuf:"bytes,2,rep,name=points" json:"points,omitempty"`
-	State         *GameState_Snake_SnakeState `protobuf:"varint,3,req,name=state,enum=snakes.GameState_Snake_SnakeState,def=0" json:"state,omitempty"`               // статус змеи в игре
-	HeadDirection *Direction                  `protobuf:"varint,4,req,name=head_direction,json=headDirection,enum=snakes.Direction" json:"head_direction,omitempty"` // Направление, в котором "повёрнута" голова змейки в текущий момент
+	Points        []*GameState_Coord         `protobuf:"bytes,2,rep,name=points,proto3" json:"points,omitempty"`
+	State         GameState_Snake_SnakeState `protobuf:"varint,3,opt,name=state,proto3,enum=snakes.GameState_Snake_SnakeState" json:"state,omitempty"`                     // статус змеи в игре
+	HeadDirection Direction                  `protobuf:"varint,4,opt,name=head_direction,json=headDirection,proto3,enum=snakes.Direction" json:"head_direction,omitempty"` // Направление, в котором "повёрнута" голова змейки в текущий момент
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GameState_Snake fields.
-const (
-	Default_GameState_Snake_State = GameState_Snake_ALIVE
-)
 
 func (x *GameState_Snake) Reset() {
 	*x = GameState_Snake{}
@@ -954,8 +885,8 @@ func (*GameState_Snake) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameState_Snake) GetPlayerId() int32 {
-	if x != nil && x.PlayerId != nil {
-		return *x.PlayerId
+	if x != nil {
+		return x.PlayerId
 	}
 	return 0
 }
@@ -968,15 +899,15 @@ func (x *GameState_Snake) GetPoints() []*GameState_Coord {
 }
 
 func (x *GameState_Snake) GetState() GameState_Snake_SnakeState {
-	if x != nil && x.State != nil {
-		return *x.State
+	if x != nil {
+		return x.State
 	}
-	return Default_GameState_Snake_State
+	return GameState_Snake_ALIVE
 }
 
 func (x *GameState_Snake) GetHeadDirection() Direction {
-	if x != nil && x.HeadDirection != nil {
-		return *x.HeadDirection
+	if x != nil {
+		return x.HeadDirection
 	}
 	return Direction_UP
 }
@@ -1021,7 +952,7 @@ func (*GameMessage_PingMsg) Descriptor() ([]byte, []int) {
 // Не-центральный игрок просит повернуть голову змеи
 type GameMessage_SteerMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Direction     *Direction             `protobuf:"varint,1,req,name=direction,enum=snakes.Direction" json:"direction,omitempty"` // Куда повернуть на следующем шаге
+	Direction     Direction              `protobuf:"varint,1,opt,name=direction,proto3,enum=snakes.Direction" json:"direction,omitempty"` // Куда повернуть на следующем шаге
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1057,8 +988,8 @@ func (*GameMessage_SteerMsg) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameMessage_SteerMsg) GetDirection() Direction {
-	if x != nil && x.Direction != nil {
-		return *x.Direction
+	if x != nil {
+		return x.Direction
 	}
 	return Direction_UP
 }
@@ -1103,7 +1034,7 @@ func (*GameMessage_AckMsg) Descriptor() ([]byte, []int) {
 // Центральный узел сообщает остальным игрокам состояние игры
 type GameMessage_StateMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	State         *GameState             `protobuf:"bytes,1,req,name=state" json:"state,omitempty"` // Состояние игрового поля
+	State         *GameState             `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"` // Состояние игрового поля
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1148,7 +1079,7 @@ func (x *GameMessage_StateMsg) GetState() *GameState {
 // Уведомление об идущих играх, регулярно отправляется multicast-ом или в ответ на DiscoverMsg
 type GameMessage_AnnouncementMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Games         []*GameAnnouncement    `protobuf:"bytes,1,rep,name=games" json:"games,omitempty"` // Идущие игры (в текущей версии задачи тут всегда ровно одна игра)
+	Games         []*GameAnnouncement    `protobuf:"bytes,1,rep,name=games,proto3" json:"games,omitempty"` // Идущие игры (в текущей версии задачи тут всегда ровно одна игра)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1230,18 +1161,13 @@ func (*GameMessage_DiscoverMsg) Descriptor() ([]byte, []int) {
 // Новый игрок хочет присоединиться к идущей игре
 type GameMessage_JoinMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PlayerType    *PlayerType            `protobuf:"varint,1,opt,name=player_type,json=playerType,enum=snakes.PlayerType,def=0" json:"player_type,omitempty"`  // Тип присоединяющегося игрока
-	PlayerName    *string                `protobuf:"bytes,3,req,name=player_name,json=playerName" json:"player_name,omitempty"`                                // Имя игрока
-	GameName      *string                `protobuf:"bytes,4,req,name=game_name,json=gameName" json:"game_name,omitempty"`                                      // Глобально уникальное имя игры, к которой хотим присоединиться
-	RequestedRole *NodeRole              `protobuf:"varint,5,req,name=requested_role,json=requestedRole,enum=snakes.NodeRole" json:"requested_role,omitempty"` // NORMAL, если хотим играть; VIEWER, если хотим только понаблюдать; остальные значения недопустимы
+	PlayerType    PlayerType             `protobuf:"varint,1,opt,name=player_type,json=playerType,proto3,enum=snakes.PlayerType" json:"player_type,omitempty"`        // Тип присоединяющегося игрока
+	PlayerName    string                 `protobuf:"bytes,3,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`                                // Имя игрока
+	GameName      string                 `protobuf:"bytes,4,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`                                      // Глобально уникальное имя игры, к которой хотим присоединиться
+	RequestedRole NodeRole               `protobuf:"varint,5,opt,name=requested_role,json=requestedRole,proto3,enum=snakes.NodeRole" json:"requested_role,omitempty"` // NORMAL, если хотим играть; VIEWER, если хотим только понаблюдать; остальные значения недопустимы
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
-
-// Default values for GameMessage_JoinMsg fields.
-const (
-	Default_GameMessage_JoinMsg_PlayerType = PlayerType_HUMAN
-)
 
 func (x *GameMessage_JoinMsg) Reset() {
 	*x = GameMessage_JoinMsg{}
@@ -1274,29 +1200,29 @@ func (*GameMessage_JoinMsg) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameMessage_JoinMsg) GetPlayerType() PlayerType {
-	if x != nil && x.PlayerType != nil {
-		return *x.PlayerType
+	if x != nil {
+		return x.PlayerType
 	}
-	return Default_GameMessage_JoinMsg_PlayerType
+	return PlayerType_HUMAN
 }
 
 func (x *GameMessage_JoinMsg) GetPlayerName() string {
-	if x != nil && x.PlayerName != nil {
-		return *x.PlayerName
+	if x != nil {
+		return x.PlayerName
 	}
 	return ""
 }
 
 func (x *GameMessage_JoinMsg) GetGameName() string {
-	if x != nil && x.GameName != nil {
-		return *x.GameName
+	if x != nil {
+		return x.GameName
 	}
 	return ""
 }
 
 func (x *GameMessage_JoinMsg) GetRequestedRole() NodeRole {
-	if x != nil && x.RequestedRole != nil {
-		return *x.RequestedRole
+	if x != nil {
+		return x.RequestedRole
 	}
 	return NodeRole_NORMAL
 }
@@ -1304,7 +1230,7 @@ func (x *GameMessage_JoinMsg) GetRequestedRole() NodeRole {
 // Ошибка операции (например отказ в присоединении к игре, т.к. нет места на поле)
 type GameMessage_ErrorMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ErrorMessage  *string                `protobuf:"bytes,1,req,name=error_message,json=errorMessage" json:"error_message,omitempty"` // Строковое сообщение, нужно отобразить его на экране, не блокируя работу программы
+	ErrorMessage  string                 `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"` // Строковое сообщение, нужно отобразить его на экране, не блокируя работу программы
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1340,8 +1266,8 @@ func (*GameMessage_ErrorMsg) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameMessage_ErrorMsg) GetErrorMessage() string {
-	if x != nil && x.ErrorMessage != nil {
-		return *x.ErrorMessage
+	if x != nil {
+		return x.ErrorMessage
 	}
 	return ""
 }
@@ -1354,8 +1280,8 @@ func (x *GameMessage_ErrorMsg) GetErrorMessage() string {
 // 5. в комбинации с 2 от главного узла заместителю о том, что он становится главным (receiver_role = MASTER)
 type GameMessage_RoleChangeMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SenderRole    *NodeRole              `protobuf:"varint,1,opt,name=sender_role,json=senderRole,enum=snakes.NodeRole" json:"sender_role,omitempty"`
-	ReceiverRole  *NodeRole              `protobuf:"varint,2,opt,name=receiver_role,json=receiverRole,enum=snakes.NodeRole" json:"receiver_role,omitempty"`
+	SenderRole    NodeRole               `protobuf:"varint,1,opt,name=sender_role,json=senderRole,proto3,enum=snakes.NodeRole" json:"sender_role,omitempty"`
+	ReceiverRole  NodeRole               `protobuf:"varint,2,opt,name=receiver_role,json=receiverRole,proto3,enum=snakes.NodeRole" json:"receiver_role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1391,15 +1317,15 @@ func (*GameMessage_RoleChangeMsg) Descriptor() ([]byte, []int) {
 }
 
 func (x *GameMessage_RoleChangeMsg) GetSenderRole() NodeRole {
-	if x != nil && x.SenderRole != nil {
-		return *x.SenderRole
+	if x != nil {
+		return x.SenderRole
 	}
 	return NodeRole_NORMAL
 }
 
 func (x *GameMessage_RoleChangeMsg) GetReceiverRole() NodeRole {
-	if x != nil && x.ReceiverRole != nil {
-		return *x.ReceiverRole
+	if x != nil {
+		return x.ReceiverRole
 	}
 	return NodeRole_NORMAL
 }
@@ -1408,52 +1334,52 @@ var File_snakes_proto protoreflect.FileDescriptor
 
 const file_snakes_proto_rawDesc = "" +
 	"\n" +
-	"\fsnakes.proto\x12\x06snakes\"\xce\x01\n" +
+	"\fsnakes.proto\x12\x06snakes\"\xc7\x01\n" +
 	"\n" +
 	"GamePlayer\x12\x12\n" +
-	"\x04name\x18\x01 \x02(\tR\x04name\x12\x0e\n" +
-	"\x02id\x18\x02 \x02(\x05R\x02id\x12\x1d\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\x05R\x02id\x12\x1d\n" +
 	"\n" +
 	"ip_address\x18\x03 \x01(\tR\tipAddress\x12\x12\n" +
 	"\x04port\x18\x04 \x01(\x05R\x04port\x12$\n" +
-	"\x04role\x18\x05 \x02(\x0e2\x10.snakes.NodeRoleR\x04role\x12-\n" +
-	"\x04type\x18\x06 \x01(\x0e2\x12.snakes.PlayerType:\x05HUMANR\x04type\x12\x14\n" +
-	"\x05score\x18\a \x02(\x05R\x05score\"\x92\x01\n" +
+	"\x04role\x18\x05 \x01(\x0e2\x10.snakes.NodeRoleR\x04role\x12&\n" +
+	"\x04type\x18\x06 \x01(\x0e2\x12.snakes.PlayerTypeR\x04type\x12\x14\n" +
+	"\x05score\x18\a \x01(\x05R\x05score\"\x81\x01\n" +
 	"\n" +
-	"GameConfig\x12\x18\n" +
-	"\x05width\x18\x01 \x01(\x05:\x0240R\x05width\x12\x1a\n" +
-	"\x06height\x18\x02 \x01(\x05:\x0230R\x06height\x12\"\n" +
-	"\vfood_static\x18\x03 \x01(\x05:\x011R\n" +
-	"foodStatic\x12*\n" +
-	"\x0estate_delay_ms\x18\x05 \x01(\x05:\x041000R\fstateDelayMs\";\n" +
+	"GameConfig\x12\x14\n" +
+	"\x05width\x18\x01 \x01(\x05R\x05width\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\x05R\x06height\x12\x1f\n" +
+	"\vfood_static\x18\x03 \x01(\x05R\n" +
+	"foodStatic\x12$\n" +
+	"\x0estate_delay_ms\x18\x05 \x01(\x05R\fstateDelayMs\";\n" +
 	"\vGamePlayers\x12,\n" +
-	"\aplayers\x18\x01 \x03(\v2\x12.snakes.GamePlayerR\aplayers\"\xde\x03\n" +
+	"\aplayers\x18\x01 \x01(\v2\x12.snakes.GamePlayerR\aplayers\"\xd1\x03\n" +
 	"\tGameState\x12\x1f\n" +
-	"\vstate_order\x18\x01 \x02(\x05R\n" +
+	"\vstate_order\x18\x01 \x01(\x05R\n" +
 	"stateOrder\x12/\n" +
 	"\x06snakes\x18\x02 \x03(\v2\x17.snakes.GameState.SnakeR\x06snakes\x12-\n" +
 	"\x05foods\x18\x03 \x03(\v2\x17.snakes.GameState.CoordR\x05foods\x12-\n" +
-	"\aplayers\x18\x04 \x02(\v2\x13.snakes.GamePlayersR\aplayers\x1a)\n" +
-	"\x05Coord\x12\x0f\n" +
-	"\x01x\x18\x01 \x01(\x11:\x010R\x01x\x12\x0f\n" +
-	"\x01y\x18\x02 \x01(\x11:\x010R\x01y\x1a\xf5\x01\n" +
+	"\aplayers\x18\x04 \x01(\v2\x13.snakes.GamePlayersR\aplayers\x1a#\n" +
+	"\x05Coord\x12\f\n" +
+	"\x01x\x18\x01 \x01(\x11R\x01x\x12\f\n" +
+	"\x01y\x18\x02 \x01(\x11R\x01y\x1a\xee\x01\n" +
 	"\x05Snake\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x02(\x05R\bplayerId\x12/\n" +
-	"\x06points\x18\x02 \x03(\v2\x17.snakes.GameState.CoordR\x06points\x12?\n" +
-	"\x05state\x18\x03 \x02(\x0e2\".snakes.GameState.Snake.SnakeState:\x05ALIVER\x05state\x128\n" +
-	"\x0ehead_direction\x18\x04 \x02(\x0e2\x11.snakes.DirectionR\rheadDirection\"#\n" +
+	"\tplayer_id\x18\x01 \x01(\x05R\bplayerId\x12/\n" +
+	"\x06points\x18\x02 \x03(\v2\x17.snakes.GameState.CoordR\x06points\x128\n" +
+	"\x05state\x18\x03 \x01(\x0e2\".snakes.GameState.Snake.SnakeStateR\x05state\x128\n" +
+	"\x0ehead_direction\x18\x04 \x01(\x0e2\x11.snakes.DirectionR\rheadDirection\"#\n" +
 	"\n" +
 	"SnakeState\x12\t\n" +
 	"\x05ALIVE\x10\x00\x12\n" +
 	"\n" +
-	"\x06ZOMBIE\x10\x01\"\xab\x01\n" +
+	"\x06ZOMBIE\x10\x01\"\xa5\x01\n" +
 	"\x10GameAnnouncement\x12-\n" +
-	"\aplayers\x18\x01 \x02(\v2\x13.snakes.GamePlayersR\aplayers\x12*\n" +
-	"\x06config\x18\x02 \x02(\v2\x12.snakes.GameConfigR\x06config\x12\x1f\n" +
-	"\bcan_join\x18\x03 \x01(\b:\x04trueR\acanJoin\x12\x1b\n" +
-	"\tgame_name\x18\x04 \x02(\tR\bgameName\"\xb8\t\n" +
+	"\aplayers\x18\x01 \x01(\v2\x13.snakes.GamePlayersR\aplayers\x12*\n" +
+	"\x06config\x18\x02 \x01(\v2\x12.snakes.GameConfigR\x06config\x12\x19\n" +
+	"\bcan_join\x18\x03 \x01(\bR\acanJoin\x12\x1b\n" +
+	"\tgame_name\x18\x04 \x01(\tR\bgameName\"\xb1\t\n" +
 	"\vGameMessage\x12\x17\n" +
-	"\amsg_seq\x18\x01 \x02(\x03R\x06msgSeq\x12\x1b\n" +
+	"\amsg_seq\x18\x01 \x01(\x03R\x06msgSeq\x12\x1b\n" +
 	"\tsender_id\x18\n" +
 	" \x01(\x05R\bsenderId\x12\x1f\n" +
 	"\vreceiver_id\x18\v \x01(\x05R\n" +
@@ -1470,22 +1396,22 @@ const file_snakes_proto_rawDesc = "" +
 	"\bdiscover\x18\f \x01(\v2\x1f.snakes.GameMessage.DiscoverMsgH\x00R\bdiscover\x1a\t\n" +
 	"\aPingMsg\x1a;\n" +
 	"\bSteerMsg\x12/\n" +
-	"\tdirection\x18\x01 \x02(\x0e2\x11.snakes.DirectionR\tdirection\x1a\b\n" +
+	"\tdirection\x18\x01 \x01(\x0e2\x11.snakes.DirectionR\tdirection\x1a\b\n" +
 	"\x06AckMsg\x1a3\n" +
 	"\bStateMsg\x12'\n" +
-	"\x05state\x18\x01 \x02(\v2\x11.snakes.GameStateR\x05state\x1aA\n" +
+	"\x05state\x18\x01 \x01(\v2\x11.snakes.GameStateR\x05state\x1aA\n" +
 	"\x0fAnnouncementMsg\x12.\n" +
 	"\x05games\x18\x01 \x03(\v2\x18.snakes.GameAnnouncementR\x05games\x1a\r\n" +
-	"\vDiscoverMsg\x1a\xbc\x01\n" +
-	"\aJoinMsg\x12:\n" +
-	"\vplayer_type\x18\x01 \x01(\x0e2\x12.snakes.PlayerType:\x05HUMANR\n" +
+	"\vDiscoverMsg\x1a\xb5\x01\n" +
+	"\aJoinMsg\x123\n" +
+	"\vplayer_type\x18\x01 \x01(\x0e2\x12.snakes.PlayerTypeR\n" +
 	"playerType\x12\x1f\n" +
-	"\vplayer_name\x18\x03 \x02(\tR\n" +
+	"\vplayer_name\x18\x03 \x01(\tR\n" +
 	"playerName\x12\x1b\n" +
-	"\tgame_name\x18\x04 \x02(\tR\bgameName\x127\n" +
-	"\x0erequested_role\x18\x05 \x02(\x0e2\x10.snakes.NodeRoleR\rrequestedRole\x1a/\n" +
+	"\tgame_name\x18\x04 \x01(\tR\bgameName\x127\n" +
+	"\x0erequested_role\x18\x05 \x01(\x0e2\x10.snakes.NodeRoleR\rrequestedRole\x1a/\n" +
 	"\bErrorMsg\x12#\n" +
-	"\rerror_message\x18\x01 \x02(\tR\ferrorMessage\x1ay\n" +
+	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x1ay\n" +
 	"\rRoleChangeMsg\x121\n" +
 	"\vsender_role\x18\x01 \x01(\x0e2\x10.snakes.NodeRoleR\n" +
 	"senderRole\x125\n" +
@@ -1505,10 +1431,10 @@ const file_snakes_proto_rawDesc = "" +
 	"\x05HUMAN\x10\x00\x12\t\n" +
 	"\x05ROBOT\x10\x01*2\n" +
 	"\tDirection\x12\x06\n" +
-	"\x02UP\x10\x01\x12\b\n" +
-	"\x04DOWN\x10\x02\x12\b\n" +
-	"\x04LEFT\x10\x03\x12\t\n" +
-	"\x05RIGHT\x10\x04B\x1bZ\x19./../lab4/internal/domain"
+	"\x02UP\x10\x00\x12\b\n" +
+	"\x04DOWN\x10\x01\x12\b\n" +
+	"\x04LEFT\x10\x02\x12\t\n" +
+	"\x05RIGHT\x10\x03B\x15Z\x13../internal/domain/b\x06proto3"
 
 var (
 	file_snakes_proto_rawDescOnce sync.Once

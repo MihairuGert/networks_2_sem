@@ -22,7 +22,7 @@ func (gs *GameSession) GenerateFood(count int) {
 	for i := 0; i < count; i++ {
 		x := int32(rand.Intn(gs.Grid.Width))
 		y := int32(rand.Intn(gs.Grid.Height))
-		food := GameState_Coord{X: &x, Y: &y}
+		food := GameState_Coord{X: x, Y: y}
 		_, okX := coordsX[x]
 		_, okY := coordsY[y]
 		if !okX && !okY {
