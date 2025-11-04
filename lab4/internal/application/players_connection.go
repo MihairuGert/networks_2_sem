@@ -15,7 +15,6 @@ func (g *Game) startAnnouncement() error {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		fmt.Println("sending announcement")
 		err2 := g.sendAnnouncementTo(network.MulticastAddress)
 		if err2 != nil {
 			return err2
@@ -76,10 +75,35 @@ func (g *Game) discoverGame() error {
 	err = g.networkManager.SendMsg(data, network.MulticastAddress)
 	if err != nil {
 		return err
-	} else {
-		fmt.Println("Discover message sent")
 	}
 	return nil
+}
+
+func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) {
+	joinMsg := &domain.GameMessage{
+		MsgSeq:     g.networkManager.MsgSeq,
+		SenderId:   -1,
+		ReceiverId: -1,
+		Type: &domain.GameMessage_Join{
+			Join: &domain.GameMessage_JoinMsg{
+				PlayerType: 0,
+				GameName:   gameName,
+			},
+		},
+	}
+
+	g.networkManager.MsgSeq++
+
+	data, err := proto.Marshal(joinMsg)
+	if err != nil {
+		fmt.Printf("Failed to marshal join: %v\n", err)
+		return
+	}
+
+	err = g.networkManager.SendMsg(data, masterAddr)
+	if err != nil {
+		fmt.Printf("Failed to send join: %v\n", err)
+	}
 }
 
 func (g *Game) startListening() {
@@ -95,7 +119,7 @@ func (g *Game) handleMessages() error {
 			fmt.Printf("Failed to unmarshal message: %v\n", err)
 		}
 
-		fmt.Printf("Received message type: %T from %s\n", gameMsg.Type, msg.Addr().String())
+		//fmt.Printf("Received message type: %T from %s\n", gameMsg.Type, msg.Addr().String())
 
 		switch gameMsg.Type.(type) {
 		case *domain.GameMessage_Discover:
@@ -109,14 +133,23 @@ func (g *Game) handleMessages() error {
 			if err != nil {
 				return err
 			}
+
+		case *domain.GameMessage_Join:
+			err := g.handleAnnouncement(&gameMsg, msg.Addr().String())
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
 func (g *Game) handleDiscover(msg *domain.GameMessage, addr string) error {
+	if g.GameSession == nil {
+		return nil
+	}
 	if g.GameSession.Node.Role() == domain.NodeRole_MASTER {
-		fmt.Printf("Received discover from %s, responding with announcement\n", addr)
+		//fmt.Printf("Received discover from %s, responding with announcement\n", addr)
 		err := g.sendAnnouncementTo(addr)
 		if err != nil {
 			return err
@@ -131,12 +164,22 @@ func (g *Game) handleAnnouncement(msg *domain.GameMessage, srcAddr string) error
 		return errors.New("invalid announcement")
 	}
 
-	fmt.Printf("Received announcement from %s with %d games\n",
-		srcAddr, len(announcement.Games))
+	//fmt.Printf("Received announcement from %s with %d games\n",
+	//srcAddr, len(announcement.Games))
 
+	var games []AvailableGame
 	for _, game := range announcement.Games {
-		fmt.Printf("Game: %s, CanJoin: %v\n",
-			game.GetGameName(), game.GetCanJoin())
+		games = append(g.availableGames, AvailableGame{
+			Msg:  game,
+			addr: srcAddr,
+		})
+		//fmt.Printf("Game: %s, CanJoin: %v\n",
+		//	game.GetGameName(), game.GetCanJoin())
 	}
+
+	g.availableGamesMutex.Lock()
+	g.availableGames = games
+	g.availableGamesMutex.Unlock()
+
 	return nil
 }
