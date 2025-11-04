@@ -8,11 +8,16 @@ type Controller interface {
 }
 
 type GameSession struct {
+	Node Node
 	Grid *Grid
 
-	GameConfig
-	GamePlayers
-	GameState
+	Config  GameConfig
+	Players GamePlayers
+	State   GameState
+}
+
+func (gs *GameSession) BecomeMaster() {
+	gs.Node.role = NodeRole_MASTER
 }
 
 // GenerateFood it is not guaranteed to generate all asked count so far.
@@ -26,7 +31,7 @@ func (gs *GameSession) GenerateFood(count int) {
 		_, okX := coordsX[x]
 		_, okY := coordsY[y]
 		if !okX && !okY {
-			gs.Foods = append(gs.Foods, &food)
+			gs.State.Foods = append(gs.State.Foods, &food)
 			coordsX[x] = true
 			coordsY[y] = true
 		}

@@ -1,7 +1,7 @@
 package application
 
 import (
-	"fmt"
+	"context"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -14,7 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"golang.org/x/image/colornames"
-	"google.golang.org/protobuf/proto"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -34,12 +34,15 @@ const (
 )
 
 type Game struct {
-	Renderer    *ui.GameSessionRenderer
-	GameSession *domain.GameSession
-	Menu        *ui.Menu
-	controllers []ui.Controller
+	Renderer *ui.GameSessionRenderer
+	Menu     *ui.Menu
 
-	networkManager network.NetworkManager
+	GameSession *domain.GameSession
+	controllers []*ui.Controller
+
+	handleChannel  chan network.Msg
+	networkManager *network.Manager
+	goroutinePool  *errgroup.Group
 
 	state gameState
 
@@ -49,6 +52,7 @@ type Game struct {
 	flickerInt    time.Duration
 	lastFlickTime time.Time
 
+	// todo move it to game config!
 	foodSpawnInt      time.Duration
 	lastFoodSpawnTime time.Time
 }
@@ -92,7 +96,7 @@ func (g *Game) checkBorders() {
 
 func (g *Game) checkFood() {
 	for i, _ := range g.controllers {
-		for k, food := range g.GameSession.Foods {
+		for k, food := range g.GameSession.State.Foods {
 			points := g.controllers[i].GetPoints()
 			head := points[0]
 			curx := head.X
@@ -101,8 +105,7 @@ func (g *Game) checkFood() {
 				if (curx == food.X) && (cury == food.Y) {
 					// here logic of growth
 					g.controllers[i].GrowPlayer()
-					// careful! hz how slices work in go
-					g.GameSession.Foods = append(g.GameSession.Foods[:k], g.GameSession.Foods[k+1:]...)
+					g.GameSession.State.Foods = append(g.GameSession.State.Foods[:k], g.GameSession.State.Foods[k+1:]...)
 					break
 				}
 				curx = curx + points[i].X
@@ -132,7 +135,11 @@ func (g *Game) Update() error {
 		g.checkFood()
 		g.addFood()
 	case Connect:
-
+		// todo implement me
+		err := g.discoverGame()
+		if err != nil {
+			return err
+		}
 	case End:
 		g.endGame()
 	default:
@@ -176,14 +183,16 @@ func (g *Game) Init() {
 	icons := []image.Image{icon}
 	ebiten.SetWindowIcon(icons)
 
-	g.lastFoodSpawnTime = time.Now()
-	g.foodSpawnInt = time.Second * 3
-
+	g.handleChannel = make(chan network.Msg)
 	g.state = Menu
+
+	g.networkManager = network.NewNetworkManager(&g.handleChannel)
+	g.goroutinePool, _ = errgroup.WithContext(context.Background())
+	g.startListening()
 	g.setupMenu()
 }
 
-func (g *Game) addPlayer(c ui.Controller) {
+func (g *Game) addPlayer(c *ui.Controller) {
 	g.controllers = append(g.controllers, c)
 }
 
@@ -219,16 +228,23 @@ func (g *Game) Start() error {
 
 func (g *Game) handleNewGame() {
 	g.state = Play
+
 	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
 	g.GameSession = &domain.GameSession{
-		Grid:       domain.NewGrid(20, 20, float32(screenWidthGlobal), float32(screenHeightGlobal)),
-		GameConfig: domain.GameConfig{}}
+		Grid:   domain.NewGrid(20, 20, float32(screenWidthGlobal), float32(screenHeightGlobal)),
+		Config: domain.GameConfig{}}
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 
 	controller := ui.Controller{}
 	controller.SetPlayer(1, 1)
-	g.addPlayer(controller)
+	g.addPlayer(&controller)
+
+	g.lastFoodSpawnTime = time.Now()
+	g.foodSpawnInt = time.Second * 3
+
+	g.GameSession.BecomeMaster()
+	g.goroutinePool.Go(g.startAnnouncement)
 }
 
 func (g *Game) handleConnect() {
@@ -244,7 +260,7 @@ func (g *Game) handleExit() {
 }
 
 func (g *Game) drawFood(screen *ebiten.Image) {
-	for _, Food := range g.GameSession.Foods {
+	for _, Food := range g.GameSession.State.Foods {
 		rectImage := ebiten.NewImage(int(g.GameSession.Grid.RectWidth), int(g.GameSession.Grid.RectHeight))
 		rectImage.Fill(colornames.Darkred)
 
@@ -254,32 +270,5 @@ func (g *Game) drawFood(screen *ebiten.Image) {
 		opts := &ebiten.DrawImageOptions{}
 		opts.GeoM.Translate(curX, curY)
 		screen.DrawImage(rectImage, opts)
-	}
-}
-
-func (g *Game) StartAnnouncement() {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		fmt.Println("sending announcement")
-		gameInfo := []*domain.GameAnnouncement{{
-			Players:  nil,
-			Config:   nil,
-			CanJoin:  true,
-			GameName: "asd",
-		}}
-
-		announcementMsg := domain.GameMessage_AnnouncementMsg{
-			Games: gameInfo,
-		}
-		data, err := proto.Marshal(&announcementMsg)
-		if err != nil {
-			panic(err)
-		}
-		err = g.networkManager.SendMsg(g.networkManager.MulticastSocket, data)
-		if err != nil {
-			panic(err)
-		}
 	}
 }
