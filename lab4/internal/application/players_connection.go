@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"snake-game/internal/application/network"
 	"snake-game/internal/domain"
+	"strconv"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -135,7 +137,7 @@ func (g *Game) handleMessages() error {
 			}
 
 		case *domain.GameMessage_Join:
-			err := g.handleAnnouncement(&gameMsg, msg.Addr().String())
+			err := g.handleJoin(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
@@ -167,19 +169,57 @@ func (g *Game) handleAnnouncement(msg *domain.GameMessage, srcAddr string) error
 	//fmt.Printf("Received announcement from %s with %d games\n",
 	//srcAddr, len(announcement.Games))
 
-	var games []AvailableGame
-	for _, game := range announcement.Games {
-		games = append(g.availableGames, AvailableGame{
-			Msg:  game,
-			addr: srcAddr,
-		})
-		//fmt.Printf("Game: %s, CanJoin: %v\n",
-		//	game.GetGameName(), game.GetCanJoin())
-	}
-
 	g.availableGamesMutex.Lock()
-	g.availableGames = games
+	g.availableGames[srcAddr] = AvailableGame{Msg: announcement.Games[0], addr: srcAddr}
 	g.availableGamesMutex.Unlock()
 
 	return nil
+}
+
+func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
+	err := g.sendAckTo(msg, srcAddr)
+	if err != nil {
+		return err
+	}
+	controller := network.Controller{}
+	controller.IpAddress, controller.Port = GetIpAndPort(srcAddr)
+	controller.SetPlayer(0, 0)
+	g.addPlayer(&controller)
+	return nil
+}
+
+func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
+	ackMsg := &domain.GameMessage{
+		MsgSeq:     g.networkManager.MsgSeq,
+		SenderId:   originalMsg.GetReceiverId(),
+		ReceiverId: originalMsg.GetSenderId(),
+		Type: &domain.GameMessage_Ack{
+			Ack: &domain.GameMessage_AckMsg{},
+		},
+	}
+
+	g.networkManager.MsgSeq++
+
+	data, err := proto.Marshal(ackMsg)
+	if err != nil {
+		return err
+	}
+	err = g.networkManager.SendMsg(data, dest)
+	if err != nil {
+		return err
+	}
+	return nil
+	// todo add connection control (sth like hashmap)
+}
+
+func GetIpAndPort(addr string) (string, int32) {
+	split := strings.Split(addr, ":")
+	if len(split) != 2 {
+		return "", 0
+	}
+	port, err := strconv.Atoi(split[1])
+	if err != nil {
+		return "", 0
+	}
+	return split[0], int32(port)
 }

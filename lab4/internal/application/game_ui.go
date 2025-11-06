@@ -69,6 +69,7 @@ func (g *Game) handleNewGame() {
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 
+	g.controllers = make(map[int]domain.Controller)
 	controller := ui.Controller{}
 	controller.SetPlayer(1, 1)
 	g.addPlayer(&controller)

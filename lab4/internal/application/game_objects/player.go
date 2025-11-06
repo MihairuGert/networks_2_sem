@@ -65,6 +65,13 @@ func (player *Player) Move(direction domain.Direction) {
 	}
 }
 
+func (player *Player) Grow() {
+	points := player.GetPoints()
+	x := points[len(points)-1].X
+	y := points[len(points)-1].Y
+	player.SetPoints(append(points, &domain.GameState_Coord{X: x, Y: y}))
+}
+
 func (player *Player) Draw(screen *ebiten.Image, grid *domain.Grid) {
 	rectImage := ebiten.NewImage(int(grid.RectWidth), int(grid.RectHeight))
 	rectImage.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})

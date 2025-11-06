@@ -86,6 +86,7 @@ func (g *Game) Update() error {
 		g.checkBorders()
 		g.checkFood()
 		g.addFood()
+		g.GameSession.IncrementStateNum()
 	case Connect:
 		err := g.discoverGame()
 		if err != nil {
@@ -111,20 +112,24 @@ func (g *Game) findGame() (AvailableGame, error) {
 		g.availableGamesMutex.Unlock()
 		return AvailableGame{}, errors.New("no available games")
 	}
-	for i, game := range g.availableGames {
+
+	availableGames := make([]AvailableGame, 0)
+	for _, game := range g.availableGames {
+		availableGames = append(availableGames, game)
+	}
+	g.availableGamesMutex.Unlock()
+
+	for i, game := range availableGames {
 		fmt.Printf("%d) %s, %v\n", i, game.Msg.GameName, game.Msg.CanJoin)
 	}
 	ind := -1
 	_, err := fmt.Scan(&ind)
 	if err != nil {
-		g.availableGamesMutex.Unlock()
 		return AvailableGame{}, err
 	}
 	if ind < 0 || ind >= len(g.availableGames) {
-		g.availableGamesMutex.Unlock()
 		return AvailableGame{}, errors.New("invalid game index")
 	}
-	game := g.availableGames[ind]
-	g.availableGamesMutex.Unlock()
+	game := availableGames[ind]
 	return game, nil
 }

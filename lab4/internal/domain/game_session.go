@@ -2,11 +2,6 @@ package domain
 
 import "math/rand"
 
-type Controller interface {
-	Move(Direction)
-	Kill()
-}
-
 type GameSession struct {
 	Node Node
 	Grid *Grid
@@ -14,6 +9,24 @@ type GameSession struct {
 	Config  GameConfig
 	Players GamePlayers
 	State   GameState
+
+	nextPlayerId    int
+	currentStateNum int
+}
+
+func (gs *GameSession) IncrementStateNum() {
+	gs.currentStateNum++
+}
+
+func (gs *GameSession) CurrentStateNum() int {
+	return gs.currentStateNum
+}
+
+// GetFreePlayerId guarantees to return a free id.
+func (gs *GameSession) GetFreePlayerId() int {
+	temp := gs.nextPlayerId
+	gs.nextPlayerId++
+	return temp
 }
 
 func (gs *GameSession) BecomeMaster() {

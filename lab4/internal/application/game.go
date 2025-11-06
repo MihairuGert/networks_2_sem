@@ -45,14 +45,14 @@ type Game struct {
 	Menu     *ui.Menu
 
 	GameSession *domain.GameSession
-	controllers []*ui.Controller
+	controllers map[int]domain.Controller
 
 	handleChannel  chan network.Msg
 	networkManager *network.Manager
 	goroutinePool  *errgroup.Group
 
 	state               gameState
-	availableGames      []AvailableGame
+	availableGames      map[string]AvailableGame
 	availableGamesMutex sync.Mutex
 
 	// Used in fancy exit window.
@@ -77,6 +77,7 @@ func (g *Game) Init() {
 	ebiten.SetWindowIcon(icons)
 
 	g.handleChannel = make(chan network.Msg)
+	g.availableGames = make(map[string]AvailableGame)
 	g.state = Menu
 
 	g.networkManager = network.NewNetworkManager(&g.handleChannel)
@@ -85,8 +86,11 @@ func (g *Game) Init() {
 	g.setupMenu()
 }
 
-func (g *Game) addPlayer(c *ui.Controller) {
-	g.controllers = append(g.controllers, c)
+func (g *Game) addPlayer(c domain.Controller) int {
+	id := g.GameSession.GetFreePlayerId()
+	c.SetId(int32(id))
+	g.controllers[id] = c
+	return id
 }
 
 func (g *Game) Start() error {

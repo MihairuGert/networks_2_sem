@@ -1,4 +1,4 @@
-package ui
+package network
 
 import (
 	"snake-game/internal/application/game_objects"
@@ -51,7 +51,17 @@ func (c *Controller) Kill() {
 }
 
 func (c *Controller) Update() {
-	// todo add movement
+	switch {
+	case ebiten.IsKeyPressed(ebiten.KeyW):
+		c.currentMovement = domain.Direction_UP
+	case ebiten.IsKeyPressed(ebiten.KeyA):
+		c.currentMovement = domain.Direction_LEFT
+	case ebiten.IsKeyPressed(ebiten.KeyD):
+		c.currentMovement = domain.Direction_RIGHT
+	case ebiten.IsKeyPressed(ebiten.KeyS):
+		c.currentMovement = domain.Direction_DOWN
+	}
+
 	if time.Since(c.lastUpdate) >= c.updatePeriod {
 		c.lastUpdate = time.Now()
 		c.Move()
