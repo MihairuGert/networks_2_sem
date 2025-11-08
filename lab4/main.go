@@ -4,8 +4,11 @@ import "snake-game/internal/application"
 
 func main() {
 	var game application.Game
-	game.Init()
-	err := game.Start()
+	err := game.Init()
+	if err != nil {
+		panic(err)
+	}
+	err = game.Start()
 	if err != nil {
 		panic(err)
 	}

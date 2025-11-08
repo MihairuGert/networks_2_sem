@@ -1,17 +1,33 @@
 package domain
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
 
 type GameSession struct {
 	Node Node
 	Grid *Grid
 
-	Config  GameConfig
+	Config  *GameConfig
 	Players GamePlayers
 	State   GameState
 
 	nextPlayerId    int
 	currentStateNum int
+
+	LastIterationTime time.Time
+}
+
+func NewGameSession(config *GameConfig, screenWidth, screenHeight float32) *GameSession {
+	grid := NewGrid(int(config.Width), int(config.Height), screenWidth, screenHeight)
+	return &GameSession{
+		Grid:   grid,
+		Config: config}
+}
+
+func (gs *GameSession) StateDelayMs() int32 {
+	return gs.Config.StateDelayMs
 }
 
 func (gs *GameSession) IncrementStateNum() {

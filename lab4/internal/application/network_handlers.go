@@ -28,13 +28,12 @@ func (g *Game) startAnnouncement() error {
 func (g *Game) sendAnnouncementTo(addr string) error {
 	gameInfo := domain.GameAnnouncement{
 		Players:  g.GameSession.State.Players,
-		Config:   &g.GameSession.Config,
+		Config:   g.GameSession.Config,
 		CanJoin:  true,
 		GameName: "asd",
 	}
 
 	announcementMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq,
 		SenderId:   -1,
 		ReceiverId: -1,
 		Type: &domain.GameMessage_Announcement{
@@ -44,7 +43,7 @@ func (g *Game) sendAnnouncementTo(addr string) error {
 		},
 	}
 
-	g.networkManager.MsgSeq++
+	//g.networkManager.msgSeq++
 
 	data, err := proto.Marshal(announcementMsg)
 	if err != nil {
@@ -59,15 +58,12 @@ func (g *Game) sendAnnouncementTo(addr string) error {
 
 func (g *Game) discoverGame() error {
 	discoverMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq,
 		SenderId:   -1,
 		ReceiverId: -1,
 		Type: &domain.GameMessage_Discover{
 			Discover: &domain.GameMessage_DiscoverMsg{},
 		},
 	}
-
-	g.networkManager.MsgSeq++
 
 	data, err := proto.Marshal(discoverMsg)
 	if err != nil {
@@ -83,7 +79,6 @@ func (g *Game) discoverGame() error {
 
 func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) {
 	joinMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq,
 		SenderId:   -1,
 		ReceiverId: -1,
 		Type: &domain.GameMessage_Join{
@@ -94,7 +89,7 @@ func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) {
 		},
 	}
 
-	g.networkManager.MsgSeq++
+	//g.networkManager.msgSeq++
 
 	data, err := proto.Marshal(joinMsg)
 	if err != nil {
@@ -109,20 +104,17 @@ func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) {
 }
 
 func (g *Game) startListening() {
-	g.goroutinePool.Go(g.handleMessages)
 	g.goroutinePool.Go(g.networkManager.ListenMulticast)
 	g.goroutinePool.Go(g.networkManager.ListenUnicast)
 }
 
-func (g *Game) handleMessages() error {
-	for msg := range g.handleChannel {
+func (g *Game) handleIncomingMessages() error {
+	messages := g.networkManager.GetUnreadMessages()
+	for _, msg := range messages {
 		var gameMsg domain.GameMessage
 		if err := proto.Unmarshal(msg.Data(), &gameMsg); err != nil {
-			fmt.Printf("Failed to unmarshal message: %v\n", err)
+			return err
 		}
-
-		//fmt.Printf("Received message type: %T from %s\n", gameMsg.Type, msg.Addr().String())
-
 		switch gameMsg.Type.(type) {
 		case *domain.GameMessage_Discover:
 			err := g.handleDiscover(&gameMsg, msg.Addr().String())
@@ -150,17 +142,22 @@ func (g *Game) handleDiscover(msg *domain.GameMessage, addr string) error {
 	if g.GameSession == nil {
 		return nil
 	}
-	if g.GameSession.Node.Role() == domain.NodeRole_MASTER {
-		//fmt.Printf("Received discover from %s, responding with announcement\n", addr)
-		err := g.sendAnnouncementTo(addr)
-		if err != nil {
-			return err
-		}
+	if g.GameSession.Node.Role() != domain.NodeRole_MASTER {
+		return nil
+	}
+	//fmt.Printf("Received discover from %s, responding with announcement\n", addr)
+	err := g.sendAnnouncementTo(addr)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (g *Game) handleAnnouncement(msg *domain.GameMessage, srcAddr string) error {
+	if g.state != Connect {
+		return nil
+	}
+
 	announcement := msg.GetAnnouncement()
 	if announcement == nil {
 		return errors.New("invalid announcement")
@@ -177,6 +174,10 @@ func (g *Game) handleAnnouncement(msg *domain.GameMessage, srcAddr string) error
 }
 
 func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
+	if g.state != Play && g.GameSession.Node.Role() != domain.NodeRole_MASTER {
+		return nil
+	}
+
 	err := g.sendAckTo(msg, srcAddr)
 	if err != nil {
 		return err
@@ -190,7 +191,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 
 func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 	ackMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq,
+		//MsgSeq:     g.networkManager.msgSeq,
 		SenderId:   originalMsg.GetReceiverId(),
 		ReceiverId: originalMsg.GetSenderId(),
 		Type: &domain.GameMessage_Ack{
@@ -198,7 +199,7 @@ func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 		},
 	}
 
-	g.networkManager.MsgSeq++
+	//g.networkManager.msgSeq++
 
 	data, err := proto.Marshal(ackMsg)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"snake-game/internal/domain"
 	"time"
 
 	"golang.org/x/image/colornames"
@@ -79,14 +80,24 @@ func (g *Game) Update() error {
 	case Menu:
 		g.Menu.Update()
 	case Play:
-		g.Renderer.Update()
-		for i, _ := range g.controllers {
-			g.controllers[i].Update()
+		switch g.GameSession.Node.Role() {
+		case domain.NodeRole_MASTER:
+			err := g.handleIncomingMessages()
+			if err != nil {
+				fmt.Println(err)
+			}
+			for i := range g.controllers {
+				g.controllers[i].Update()
+			}
+			if time.Since(g.GameSession.LastIterationTime) >= time.Duration(g.GameSession.StateDelayMs())*time.Millisecond {
+				g.GameSession.LastIterationTime = time.Now()
+				g.computeNextIteration()
+			}
+		case domain.NodeRole_DEPUTY:
+		case domain.NodeRole_NORMAL:
+		case domain.NodeRole_VIEWER:
 		}
-		g.checkBorders()
-		g.checkFood()
-		g.addFood()
-		g.GameSession.IncrementStateNum()
+
 	case Connect:
 		err := g.discoverGame()
 		if err != nil {
@@ -98,12 +109,22 @@ func (g *Game) Update() error {
 			break
 		}
 		g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
+		g.state = Play
 	case End:
 		g.endGame()
 	default:
 		panic("unhandled default case")
 	}
 	return nil
+}
+
+func (g *Game) computeNextIteration() {
+	g.Renderer.Update()
+	g.moveControllers()
+	g.checkBorders()
+	g.checkFood()
+	g.addFood()
+	g.GameSession.IncrementStateNum()
 }
 
 func (g *Game) findGame() (AvailableGame, error) {
@@ -132,4 +153,10 @@ func (g *Game) findGame() (AvailableGame, error) {
 	}
 	game := availableGames[ind]
 	return game, nil
+}
+
+func (g *Game) moveControllers() {
+	for i := range g.controllers {
+		g.controllers[i].Move()
+	}
 }

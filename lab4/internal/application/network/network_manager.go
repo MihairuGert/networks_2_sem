@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 )
 
@@ -12,28 +13,23 @@ const (
 	MulticastAddress = "239.192.0.4:9192"
 )
 
-type Msg struct {
-	data []byte
-	addr net.Addr
-}
-
-func (m Msg) Data() []byte {
-	return m.data
-}
-
-func (m Msg) Addr() net.Addr {
-	return m.addr
-}
-
 type Manager struct {
 	multicastSocket *net.UDPConn
 	unicastSocket   *net.UDPConn
-	MsgSeq          int64
 
-	handleChannel *chan Msg
+	msgQueue    *MsgQueue
+	msgSeq      int64
+	msqSeqMutex sync.Mutex
 }
 
-func NewNetworkManager(handleChannel *chan Msg) *Manager {
+func (nm *Manager) MsgSeq() int64 {
+	nm.msqSeqMutex.Lock()
+	defer nm.msqSeqMutex.Unlock()
+	nm.msgSeq++
+	return nm.msgSeq - 1
+}
+
+func NewNetworkManager() *Manager {
 	mcs, err := newMulticastSocket()
 	if err != nil {
 		panic(err)
@@ -44,11 +40,13 @@ func NewNetworkManager(handleChannel *chan Msg) *Manager {
 		panic(err)
 	}
 
+	mq := NewMsgQueue()
+
 	nw := &Manager{
 		multicastSocket: mcs,
 		unicastSocket:   ucs,
-		MsgSeq:          0,
-		handleChannel:   handleChannel,
+		msgSeq:          0,
+		msgQueue:        mq,
 	}
 	return nw
 }
@@ -105,7 +103,7 @@ func (nm *Manager) ListenMulticast() error {
 			continue
 		}
 
-		*nm.handleChannel <- Msg{buffer[:n], srcAddr}
+		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr, nm.MsgSeq()})
 	}
 }
 
@@ -119,6 +117,10 @@ func (nm *Manager) ListenUnicast() error {
 			continue
 		}
 
-		*nm.handleChannel <- Msg{buffer[:n], srcAddr}
+		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr, nm.MsgSeq()})
 	}
+}
+
+func (nm *Manager) GetUnreadMessages() []Msg {
+	return nm.msgQueue.readAllMsg()
 }

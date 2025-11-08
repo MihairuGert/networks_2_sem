@@ -3,12 +3,9 @@ package application
 import (
 	"image/color"
 	"snake-game/internal/application/ui"
-	"snake-game/internal/domain"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"golang.org/x/image/colornames"
 )
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -56,53 +53,5 @@ func (g *Game) setupMenu() {
 	g.Menu.GetButton(2).NormalImage, _, err = ebitenutil.NewImageFromFile(texturesPath + "exit.png")
 	if err != nil {
 		panic(err)
-	}
-}
-
-func (g *Game) handleNewGame() {
-	g.state = Play
-
-	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
-	g.GameSession = &domain.GameSession{
-		Grid:   domain.NewGrid(20, 20, float32(screenWidthGlobal), float32(screenHeightGlobal)),
-		Config: domain.GameConfig{}}
-	g.Renderer = &renderer
-	g.Renderer.SetGridImage(g.GameSession.Grid)
-
-	g.controllers = make(map[int]domain.Controller)
-	controller := ui.Controller{}
-	controller.SetPlayer(1, 1)
-	g.addPlayer(&controller)
-
-	g.lastFoodSpawnTime = time.Now()
-	g.foodSpawnInt = time.Second * 3
-
-	g.GameSession.BecomeMaster()
-	g.goroutinePool.Go(g.startAnnouncement)
-}
-
-func (g *Game) handleConnect() {
-	g.state = Connect
-}
-
-func (g *Game) handleExit() {
-	g.state = End
-	g.shutdownTime = time.Now()
-	g.lastFlickTime = time.Now()
-	g.flickerInt = 25 * time.Millisecond
-	g.finalMsg = ui.NewText("", 24, 100, 100)
-}
-
-func (g *Game) drawFood(screen *ebiten.Image) {
-	for _, Food := range g.GameSession.State.Foods {
-		rectImage := ebiten.NewImage(int(g.GameSession.Grid.RectWidth), int(g.GameSession.Grid.RectHeight))
-		rectImage.Fill(colornames.Darkred)
-
-		curX := float64(Food.X) * float64(g.GameSession.Grid.RectWidth)
-		curY := float64(Food.Y) * float64(g.GameSession.Grid.RectHeight)
-
-		opts := &ebiten.DrawImageOptions{}
-		opts.GeoM.Translate(curX, curY)
-		screen.DrawImage(rectImage, opts)
 	}
 }

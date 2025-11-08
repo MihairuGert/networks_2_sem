@@ -1,7 +1,6 @@
 package application
 
 import (
-	"context"
 	"image"
 	_ "image/jpeg"
 	"snake-game/internal/application/network"
@@ -66,24 +65,27 @@ type Game struct {
 	lastFoodSpawnTime time.Time
 }
 
-func (g *Game) Init() {
+func (g *Game) Init() error {
+	err := g.setUpWindow()
+	if err != nil {
+		return err
+	}
+
+	g.setupMenu()
+	g.state = Menu
+	return nil
+}
+
+func (g *Game) setUpWindow() error {
 	ebiten.SetWindowSize(screenWidthGlobal, screenHeightGlobal)
 	ebiten.SetWindowTitle("Mihairu's Snake Game")
 	_, icon, err := ebitenutil.NewImageFromFile(texturesPath + "app_icon.jpeg")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	icons := []image.Image{icon}
 	ebiten.SetWindowIcon(icons)
-
-	g.handleChannel = make(chan network.Msg)
-	g.availableGames = make(map[string]AvailableGame)
-	g.state = Menu
-
-	g.networkManager = network.NewNetworkManager(&g.handleChannel)
-	g.goroutinePool, _ = errgroup.WithContext(context.Background())
-	g.startListening()
-	g.setupMenu()
+	return nil
 }
 
 func (g *Game) addPlayer(c domain.Controller) int {
