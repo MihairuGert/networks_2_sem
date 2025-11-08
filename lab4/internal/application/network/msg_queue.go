@@ -6,9 +6,8 @@ import (
 )
 
 type Msg struct {
-	data   []byte
-	addr   net.Addr
-	msgNum int64
+	data []byte
+	addr net.Addr
 }
 
 func (m Msg) Data() []byte {
@@ -17,10 +16,6 @@ func (m Msg) Data() []byte {
 
 func (m Msg) Addr() net.Addr {
 	return m.addr
-}
-
-func (m Msg) MsgNum() int64 {
-	return m.msgNum
 }
 
 type MsgQueue struct {
@@ -40,11 +35,9 @@ func (mq *MsgQueue) addMsg(msg Msg) {
 
 func (mq *MsgQueue) readAllMsg() []Msg {
 	mq.sync.Lock()
+	defer mq.sync.Unlock()
 
-	var temp []Msg
-	copy(temp, mq.unreadMessages)
+	temp := mq.unreadMessages
 	mq.unreadMessages = mq.unreadMessages[:0]
-
-	mq.sync.Unlock()
 	return temp
 }

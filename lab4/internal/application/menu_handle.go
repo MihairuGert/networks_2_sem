@@ -1,7 +1,7 @@
 package application
 
 import (
-	"context"
+	"fmt"
 	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"golang.org/x/image/colornames"
-	"golang.org/x/sync/errgroup"
 )
 
 func (g *Game) handleNewGame() {
@@ -32,6 +31,7 @@ func (g *Game) startGame() {
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 
 	g.GameSession.BecomeMaster()
+	g.goroutinePool.Go(g.startAnnouncement)
 
 	g.controllers = make(map[int]domain.Controller)
 	controller := ui.Controller{}
@@ -43,16 +43,36 @@ func (g *Game) startGame() {
 }
 
 func (g *Game) startNetwork() {
-	// todo move it to connect!
-	//g.availableGames = make(map[string]AvailableGame)
-	g.networkManager = network.NewNetworkManager()
-	g.goroutinePool, _ = errgroup.WithContext(context.Background())
-	g.goroutinePool.Go(g.startAnnouncement)
+	g.networkManager = network.NewNetworkManager(time.Duration(g.GameSession.StateDelayMs() / 10))
 	g.startListening()
 }
 
 func (g *Game) handleConnect() {
-	g.state = Connect
+	g.availableGames = make(map[string]AvailableGame)
+	g.startNetwork()
+
+	var game AvailableGame
+	for {
+		err := g.handleIncomingMessages()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		err = g.discoverGame()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		game, err = g.findGame()
+		if err != nil {
+			continue
+		}
+		g.networkManager.SetAckControllerResendInt(time.Duration(game.Msg.Config.StateDelayMs / 10))
+		break
+	}
+	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
+	// todo wait for ack
+	g.state = Play
 }
 
 func (g *Game) handleExit() {

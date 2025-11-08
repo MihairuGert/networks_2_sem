@@ -20,8 +20,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			c.DrawPlayer(screen, g.GameSession.Grid)
 		}
 		g.drawFood(screen)
-	case Connect:
-
 	case End:
 		g.finalMsg.Draw(screen)
 	default:

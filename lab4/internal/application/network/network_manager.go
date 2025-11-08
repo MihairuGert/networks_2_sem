@@ -3,10 +3,12 @@ package network
 import (
 	"fmt"
 	"net"
+	"snake-game/internal/domain"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 const (
@@ -20,6 +22,12 @@ type Manager struct {
 	msgQueue    *MsgQueue
 	msgSeq      int64
 	msqSeqMutex sync.Mutex
+
+	ackController *AckController
+}
+
+func (nm *Manager) NeedAck(msg *domain.GameMessage) {
+	nm.ackController.addAckMsg(msg)
 }
 
 func (nm *Manager) MsgSeq() int64 {
@@ -42,13 +50,20 @@ func NewNetworkManager() *Manager {
 
 	mq := NewMsgQueue()
 
+	ac := NewAckController(time.Hour)
+
 	nw := &Manager{
 		multicastSocket: mcs,
 		unicastSocket:   ucs,
 		msgSeq:          0,
 		msgQueue:        mq,
+		ackController:   ac,
 	}
 	return nw
+}
+
+func (nm *Manager) SetAckControllerResendInt(duration time.Duration) {
+	nm.ackController.resendInterval = duration
 }
 
 func newUnicastSocket() (*net.UDPConn, error) {
@@ -103,7 +118,7 @@ func (nm *Manager) ListenMulticast() error {
 			continue
 		}
 
-		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr, nm.MsgSeq()})
+		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
 	}
 }
 
@@ -117,7 +132,7 @@ func (nm *Manager) ListenUnicast() error {
 			continue
 		}
 
-		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr, nm.MsgSeq()})
+		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
 	}
 }
 

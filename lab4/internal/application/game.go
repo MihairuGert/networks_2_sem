@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"image"
 	_ "image/jpeg"
 	"snake-game/internal/application/network"
@@ -25,7 +26,6 @@ type gameState int
 
 const (
 	Menu gameState = iota
-	Connect
 	Play
 	End
 )
@@ -71,6 +71,7 @@ func (g *Game) Init() error {
 		return err
 	}
 
+	g.goroutinePool, _ = errgroup.WithContext(context.Background())
 	g.setupMenu()
 	g.state = Menu
 	return nil

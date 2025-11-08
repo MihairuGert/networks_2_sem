@@ -97,19 +97,6 @@ func (g *Game) Update() error {
 		case domain.NodeRole_NORMAL:
 		case domain.NodeRole_VIEWER:
 		}
-
-	case Connect:
-		err := g.discoverGame()
-		if err != nil {
-			return err
-		}
-		game, err := g.findGame()
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
-		g.state = Play
 	case End:
 		g.endGame()
 	default:
@@ -139,6 +126,9 @@ func (g *Game) findGame() (AvailableGame, error) {
 		availableGames = append(availableGames, game)
 	}
 	g.availableGamesMutex.Unlock()
+	if len(availableGames) == 0 {
+		return AvailableGame{}, errors.New("no available games")
+	}
 
 	for i, game := range availableGames {
 		fmt.Printf("%d) %s, %v\n", i, game.Msg.GameName, game.Msg.CanJoin)
