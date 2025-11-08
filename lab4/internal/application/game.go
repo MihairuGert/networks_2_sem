@@ -89,11 +89,8 @@ func (g *Game) setUpWindow() error {
 	return nil
 }
 
-func (g *Game) addPlayer(c domain.Controller) int {
-	id := g.GameSession.GetFreePlayerId()
-	c.SetId(int32(id))
-	g.controllers[id] = c
-	return id
+func (g *Game) addPlayer(c domain.Controller) {
+	g.controllers[int(c.Id())] = c
 }
 
 func (g *Game) Start() error {
@@ -101,4 +98,11 @@ func (g *Game) Start() error {
 		return err
 	}
 	return nil
+}
+
+func (g *Game) setState() {
+	g.GameSession.State.StateOrder = int32(g.GameSession.CurrentStateNum())
+	for _, controller := range g.controllers {
+		g.GameSession.State.Players = append(g.GameSession.State.Players, controller.)
+	}
 }

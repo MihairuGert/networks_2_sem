@@ -70,6 +70,7 @@ func NewNetworkManager() *Manager {
 		msgQueue:        mq,
 		ackController:   ac,
 		sendChan:        sendChan,
+		msqSeqMutex:     sync.Mutex{},
 	}
 	go nw.sendGoroutine()
 	return nw

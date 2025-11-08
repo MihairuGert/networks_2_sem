@@ -11,11 +11,10 @@ import (
 )
 
 func (g *Game) handleNewGame() {
-	g.state = Play
-
 	g.startGame()
-
 	g.startNetwork()
+
+	g.state = Play
 }
 
 func (g *Game) startGame() {
@@ -30,11 +29,10 @@ func (g *Game) startGame() {
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 
 	g.GameSession.BecomeMaster()
-	g.goroutinePool.Go(g.startAnnouncement)
 
 	g.controllers = make(map[int]domain.Controller)
 	controller := ui.Controller{}
-	controller.SetPlayer(1, 1)
+	controller.SetPlayer(1, 1, "me", 0)
 	g.addPlayer(&controller)
 
 	g.lastFoodSpawnTime = time.Now()
@@ -43,6 +41,7 @@ func (g *Game) startGame() {
 
 func (g *Game) startNetwork() {
 	g.networkManager = network.NewNetworkManager()
+	g.goroutinePool.Go(g.startAnnouncement)
 	g.startListening()
 }
 

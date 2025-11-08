@@ -198,8 +198,11 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		return err
 	}
 	controller := network.Controller{}
-	controller.IpAddress, controller.Port = GetIpAndPort(srcAddr)
-	controller.SetPlayer(0, 0)
+	ipAddress, port := GetIpAndPort(srcAddr)
+	controller.SetIpAndPort(ipAddress, port)
+	id := g.GameSession.GetFreePlayerId()
+	controller.SetId(int32(id))
+	controller.SetPlayer(0, 0, msg.GetJoin().PlayerName, int32(id))
 	g.addPlayer(&controller)
 	return nil
 }
@@ -223,7 +226,29 @@ func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 		return err
 	}
 	return nil
-	// todo add connection control (sth like hashmap)
+}
+
+func (g *Game) sendState() error {
+	stateMsg := &domain.GameMessage{
+		MsgSeq:     g.networkManager.MsgSeq(),
+		SenderId:   -1,
+		ReceiverId: -1,
+		Type: &domain.GameMessage_State{
+			State: &domain.GameMessage_StateMsg{
+				State: &g.GameSession.State,
+			},
+		},
+	}
+
+	data, err := proto.Marshal(stateMsg)
+	if err != nil {
+		return err
+	}
+	err = g.networkManager.SendMsg(data, network.MulticastAddress)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetIpAndPort(addr string) (string, int32) {

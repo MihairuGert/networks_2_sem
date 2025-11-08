@@ -92,6 +92,8 @@ func (g *Game) Update() error {
 			if time.Since(g.GameSession.LastIterationTime) >= time.Duration(g.GameSession.StateDelayMs())*time.Millisecond {
 				g.GameSession.LastIterationTime = time.Now()
 				g.computeNextIteration()
+				g.setState()
+				g.sendState()
 			}
 		case domain.NodeRole_DEPUTY:
 		case domain.NodeRole_NORMAL:
