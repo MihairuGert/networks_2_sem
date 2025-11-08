@@ -61,8 +61,8 @@ func (g *Game) checkFood() {
 					g.GameSession.State.Foods = append(g.GameSession.State.Foods[:k], g.GameSession.State.Foods[k+1:]...)
 					break
 				}
-				curx = curx + points[i].X
-				cury = cury + points[i].Y
+				curx = curx + points[j].X
+				cury = cury + points[j].Y
 			}
 		}
 	}

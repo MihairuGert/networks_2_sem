@@ -10,6 +10,10 @@ type Msg struct {
 	addr net.Addr
 }
 
+func NewMsg(data []byte, addr net.Addr) *Msg {
+	return &Msg{data: data, addr: addr}
+}
+
 func (m Msg) Data() []byte {
 	return m.data
 }

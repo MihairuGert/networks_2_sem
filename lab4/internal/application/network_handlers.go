@@ -96,7 +96,6 @@ func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) int64
 			},
 		},
 	}
-	g.networkManager.NeedAck(joinMsg)
 
 	data, err := proto.Marshal(joinMsg)
 	if err != nil {
@@ -109,6 +108,11 @@ func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) int64
 		fmt.Printf("Failed to send join: %v\n", err)
 		return -1
 	}
+	addr, err := network.StringToAddr(masterAddr)
+	if err != nil {
+		return 0
+	}
+	g.networkManager.NeedAck(network.NewMsg(data, addr), res, false)
 	return res
 }
 
@@ -142,6 +146,8 @@ func (g *Game) handleIncomingMessages() error {
 			if err != nil {
 				return err
 			}
+		case *domain.GameMessage_Ack:
+			g.networkManager.SetAck(gameMsg.MsgSeq)
 		}
 	}
 	return nil

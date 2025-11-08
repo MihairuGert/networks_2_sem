@@ -3,7 +3,6 @@ package network
 import (
 	"fmt"
 	"net"
-	"snake-game/internal/domain"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,11 +22,21 @@ type Manager struct {
 	msgSeq      int64
 	msqSeqMutex sync.Mutex
 
+	sendChan chan Msg
+
 	ackController *AckController
 }
 
-func (nm *Manager) NeedAck(msg *domain.GameMessage) {
-	nm.ackController.addAckMsg(msg)
+func (nm *Manager) SetAck(seqNum int64) {
+	nm.ackController.setAck(seqNum)
+}
+
+func (nm *Manager) NeedAck(msg *Msg, seqNum int64, doAutoCheck bool) {
+	nm.ackController.addAckMsg(msg, seqNum, doAutoCheck)
+}
+
+func (nm *Manager) CheckAck(seqNum int64) bool {
+	return nm.ackController.checkAck(seqNum)
 }
 
 func (nm *Manager) MsgSeq() int64 {
@@ -50,7 +59,9 @@ func NewNetworkManager() *Manager {
 
 	mq := NewMsgQueue()
 
-	ac := NewAckController(time.Hour)
+	sendChan := make(chan Msg, 100)
+
+	ac := NewAckController(&sendChan, 10*time.Millisecond)
 
 	nw := &Manager{
 		multicastSocket: mcs,
@@ -58,7 +69,9 @@ func NewNetworkManager() *Manager {
 		msgSeq:          0,
 		msgQueue:        mq,
 		ackController:   ac,
+		sendChan:        sendChan,
 	}
+	go nw.sendGoroutine()
 	return nw
 }
 
@@ -92,20 +105,33 @@ func newMulticastSocket() (*net.UDPConn, error) {
 	return conn, nil
 }
 
-func (nm *Manager) SendMsg(msg []byte, addr string) error {
+func (nm *Manager) SendMsg(msg []byte, strAddr string) error {
+	addr, err := StringToAddr(strAddr)
+	if err != nil {
+		return err
+	}
+	nm.sendChan <- Msg{
+		data: msg,
+		addr: addr,
+	}
+	return nil
+}
+
+func StringToAddr(addr string) (*net.UDPAddr, error) {
 	temp := strings.Split(addr, ":")
 	if len(temp) != 2 {
-		return syscall.EINVAL
+		return nil, syscall.EINVAL
 	}
 
 	ip := net.ParseIP(temp[0])
 	port, err := strconv.ParseInt(temp[1], 10, 0)
 	if err != nil {
-		return syscall.EINVAL
+		return nil, syscall.EINVAL
 	}
-
-	_, err = nm.unicastSocket.WriteTo(msg, &net.UDPAddr{IP: ip, Port: int(port)})
-	return err
+	return &net.UDPAddr{
+		IP:   ip,
+		Port: int(port),
+	}, nil
 }
 
 func (nm *Manager) ListenMulticast() error {
@@ -133,6 +159,17 @@ func (nm *Manager) ListenUnicast() error {
 		}
 
 		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
+	}
+}
+
+func (nm *Manager) sendGoroutine() {
+	for {
+		for msg := range nm.sendChan {
+			_, err := nm.unicastSocket.WriteTo(msg.data, msg.addr)
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 }
 

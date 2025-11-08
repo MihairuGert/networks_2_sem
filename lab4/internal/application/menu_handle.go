@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
@@ -43,7 +42,7 @@ func (g *Game) startGame() {
 }
 
 func (g *Game) startNetwork() {
-	g.networkManager = network.NewNetworkManager(time.Duration(g.GameSession.StateDelayMs() / 10))
+	g.networkManager = network.NewNetworkManager()
 	g.startListening()
 }
 
@@ -55,12 +54,10 @@ func (g *Game) handleConnect() {
 	for {
 		err := g.handleIncomingMessages()
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		err = g.discoverGame()
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		game, err = g.findGame()
@@ -71,7 +68,13 @@ func (g *Game) handleConnect() {
 		break
 	}
 	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
-	// todo wait for ack
+	for g.networkManager.CheckAck(seqNum) == false {
+		err := g.handleIncomingMessages()
+		if err != nil {
+			continue
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
 	g.state = Play
 }
 
