@@ -385,7 +385,7 @@ func (x *GameConfig) GetStateDelayMs() int32 {
 // Игроки конкретной игры
 type GamePlayers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Players       *GamePlayer            `protobuf:"bytes,1,opt,name=players,proto3" json:"players,omitempty"` // Список всех игроков
+	Players       []*GamePlayer          `protobuf:"bytes,1,rep,name=players,proto3" json:"players,omitempty"` // Список всех игроков
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -420,7 +420,7 @@ func (*GamePlayers) Descriptor() ([]byte, []int) {
 	return file_snakes_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GamePlayers) GetPlayers() *GamePlayer {
+func (x *GamePlayers) GetPlayers() []*GamePlayer {
 	if x != nil {
 		return x.Players
 	}
@@ -1353,7 +1353,7 @@ const file_snakes_proto_rawDesc = "" +
 	"foodStatic\x12$\n" +
 	"\x0estate_delay_ms\x18\x05 \x01(\x05R\fstateDelayMs\";\n" +
 	"\vGamePlayers\x12,\n" +
-	"\aplayers\x18\x01 \x01(\v2\x12.snakes.GamePlayerR\aplayers\"\xd1\x03\n" +
+	"\aplayers\x18\x01 \x03(\v2\x12.snakes.GamePlayerR\aplayers\"\xd1\x03\n" +
 	"\tGameState\x12\x1f\n" +
 	"\vstate_order\x18\x01 \x01(\x05R\n" +
 	"stateOrder\x12/\n" +

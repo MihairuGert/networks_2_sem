@@ -11,7 +11,9 @@ type GameSession struct {
 
 	Config  *GameConfig
 	Players GamePlayers
-	State   GameState
+	State   *GameState
+
+	myID int
 
 	nextPlayerId    int
 	currentStateNum int
@@ -19,11 +21,21 @@ type GameSession struct {
 	LastIterationTime time.Time
 }
 
+func (gs *GameSession) MyID() int {
+	return gs.myID
+}
+
+func (gs *GameSession) SetMyID(myID int) {
+	gs.myID = myID
+}
+
 func NewGameSession(config *GameConfig, screenWidth, screenHeight float32) *GameSession {
 	grid := NewGrid(int(config.Width), int(config.Height), screenWidth, screenHeight)
+	gameState := &GameState{Snakes: make([]*GameState_Snake, 0), Players: nil, Foods: make([]*GameState_Coord, 0)}
 	return &GameSession{
 		Grid:   grid,
-		Config: config}
+		Config: config,
+		State:  gameState}
 }
 
 func (gs *GameSession) StateDelayMs() int32 {
@@ -47,6 +59,10 @@ func (gs *GameSession) GetFreePlayerId() int {
 
 func (gs *GameSession) BecomeMaster() {
 	gs.Node.role = NodeRole_MASTER
+}
+
+func (gs *GameSession) BecomeNormal() {
+	gs.Node.role = NodeRole_NORMAL
 }
 
 // GenerateFood it is not guaranteed to generate all asked count so far.

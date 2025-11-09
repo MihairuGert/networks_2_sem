@@ -44,7 +44,7 @@ type Game struct {
 	Menu     *ui.Menu
 
 	GameSession *domain.GameSession
-	controllers map[int]domain.Controller
+	controllers map[int]*ui.Controller
 
 	handleChannel  chan network.Msg
 	networkManager *network.Manager
@@ -78,7 +78,7 @@ func (g *Game) Init() error {
 }
 
 func (g *Game) setUpWindow() error {
-	ebiten.SetWindowSize(screenWidthGlobal, screenHeightGlobal)
+	ebiten.SetWindowSize(int(screenWidthGlobal), int(screenHeightGlobal))
 	ebiten.SetWindowTitle("Mihairu's Snake Game")
 	_, icon, err := ebitenutil.NewImageFromFile(texturesPath + "app_icon.jpeg")
 	if err != nil {
@@ -89,7 +89,7 @@ func (g *Game) setUpWindow() error {
 	return nil
 }
 
-func (g *Game) addPlayer(c domain.Controller) {
+func (g *Game) addPlayer(c *ui.Controller) {
 	g.controllers[int(c.Id())] = c
 }
 
@@ -102,7 +102,12 @@ func (g *Game) Start() error {
 
 func (g *Game) setState() {
 	g.GameSession.State.StateOrder = int32(g.GameSession.CurrentStateNum())
+	var players []*domain.GamePlayer
+	var snakes []*domain.GameState_Snake
 	for _, controller := range g.controllers {
-		g.GameSession.State.Players = append(g.GameSession.State.Players, controller.)
+		players = append(players, controller.Player())
+		snakes = append(snakes, controller.Snake())
 	}
+	g.GameSession.State.Snakes = snakes
+	g.GameSession.State.Players = &domain.GamePlayers{Players: players}
 }

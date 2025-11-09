@@ -35,7 +35,7 @@ func (r *GameSessionRenderer) Update() {
 
 }
 
-func (r *GameSessionRenderer) Draw(screen *ebiten.Image, session *domain.GameSession) {
+func (r *GameSessionRenderer) DrawGrid(screen *ebiten.Image) {
 	screen.Fill(colornames.Black)
 	screen.DrawImage(r.gridImage, &ebiten.DrawImageOptions{})
 }

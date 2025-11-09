@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"snake-game/internal/application/network"
+	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
 	"strconv"
 	"strings"
@@ -17,6 +18,9 @@ func (g *Game) startAnnouncement() error {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		if g.GameSession == nil || g.GameSession.Node.Role() != domain.NodeRole_MASTER {
+			continue
+		}
 		err2 := g.sendAnnouncementTo(network.MulticastAddress)
 		if err2 != nil {
 			return err2
@@ -147,7 +151,12 @@ func (g *Game) handleIncomingMessages() error {
 				return err
 			}
 		case *domain.GameMessage_Ack:
-			g.networkManager.SetAck(gameMsg.MsgSeq)
+			g.networkManager.SetAck(gameMsg.MsgSeq, &gameMsg)
+		case *domain.GameMessage_State:
+			if g.GameSession.Node.Role() == domain.NodeRole_MASTER {
+				continue
+			}
+			g.GameSession.State = gameMsg.GetState().State
 		}
 	}
 	return nil
@@ -193,23 +202,24 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		return nil
 	}
 
+	controller := ui.Controller{}
+	id := g.GameSession.GetFreePlayerId()
+	controller.SetPlayer(0, 0, msg.GetJoin().PlayerName, int32(id))
+	ipAddress, port := GetIpAndPort(srcAddr)
+	controller.SetIpAndPort(ipAddress, port)
+	g.addPlayer(&controller)
+
+	msg.ReceiverId = int32(id)
 	err := g.sendAckTo(msg, srcAddr)
 	if err != nil {
 		return err
 	}
-	controller := network.Controller{}
-	ipAddress, port := GetIpAndPort(srcAddr)
-	controller.SetIpAndPort(ipAddress, port)
-	id := g.GameSession.GetFreePlayerId()
-	controller.SetId(int32(id))
-	controller.SetPlayer(0, 0, msg.GetJoin().PlayerName, int32(id))
-	g.addPlayer(&controller)
 	return nil
 }
 
 func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 	ackMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq(),
+		MsgSeq:     originalMsg.MsgSeq,
 		SenderId:   originalMsg.GetReceiverId(),
 		ReceiverId: originalMsg.GetSenderId(),
 		Type: &domain.GameMessage_Ack{
@@ -230,12 +240,10 @@ func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 
 func (g *Game) sendState() error {
 	stateMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq(),
-		SenderId:   -1,
-		ReceiverId: -1,
+		MsgSeq: g.networkManager.MsgSeq(),
 		Type: &domain.GameMessage_State{
 			State: &domain.GameMessage_StateMsg{
-				State: &g.GameSession.State,
+				State: g.GameSession.State,
 			},
 		},
 	}

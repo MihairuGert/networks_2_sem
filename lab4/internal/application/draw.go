@@ -3,9 +3,11 @@ package application
 import (
 	"image/color"
 	"snake-game/internal/application/ui"
+	"snake-game/internal/domain"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"golang.org/x/image/colornames"
 )
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -15,15 +17,63 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	case Menu:
 		g.Menu.Draw(screen)
 	case Play:
-		g.Renderer.Draw(screen, g.GameSession)
-		for _, c := range g.controllers {
-			c.DrawPlayer(screen, g.GameSession.Grid)
+		if g.GameSession == nil || g.GameSession.State == nil {
+			return
 		}
+		g.Renderer.DrawGrid(screen)
+		g.drawSnakes(screen)
 		g.drawFood(screen)
 	case End:
 		g.finalMsg.Draw(screen)
 	default:
 		panic("unhandled default case")
+	}
+}
+
+func (g *Game) drawSnakes(screen *ebiten.Image) {
+	if g.GameSession.State.Snakes == nil {
+		return
+	}
+	for _, snake := range g.GameSession.State.Snakes {
+		drawSnake(screen, snake, g.GameSession.Grid)
+	}
+}
+
+func drawSnake(screen *ebiten.Image, snake *domain.GameState_Snake, grid *domain.Grid) {
+	rectImage := ebiten.NewImage(int(grid.RectWidth), int(grid.RectHeight))
+	rectImage.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+
+	curX := float64(snake.Points[0].X) * float64(grid.RectWidth)
+	curY := float64(snake.Points[0].Y) * float64(grid.RectHeight)
+
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(curX, curY)
+	screen.DrawImage(rectImage, opts)
+
+	for i := 1; i < len(snake.Points); i++ {
+		curX = curX + float64(grid.RectWidth)*float64(snake.Points[i].X)
+		curY = curY + float64(grid.RectHeight)*float64(snake.Points[i].Y)
+
+		opts := &ebiten.DrawImageOptions{}
+		opts.GeoM.Translate(curX, curY)
+		screen.DrawImage(rectImage, opts)
+	}
+}
+
+func (g *Game) drawFood(screen *ebiten.Image) {
+	if g.GameSession.State.Foods == nil {
+		return
+	}
+	for _, Food := range g.GameSession.State.Foods {
+		rectImage := ebiten.NewImage(int(g.GameSession.Grid.RectWidth), int(g.GameSession.Grid.RectHeight))
+		rectImage.Fill(colornames.Darkred)
+
+		curX := float64(Food.X) * float64(g.GameSession.Grid.RectWidth)
+		curY := float64(Food.Y) * float64(g.GameSession.Grid.RectHeight)
+
+		opts := &ebiten.DrawImageOptions{}
+		opts.GeoM.Translate(curX, curY)
+		screen.DrawImage(rectImage, opts)
 	}
 }
 

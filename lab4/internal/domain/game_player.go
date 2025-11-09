@@ -1,11 +1,5 @@
 package domain
 
-import (
-	"image/color"
-
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
 type PlayerWrapper struct {
 	Player *GamePlayer
 	Snake  *GameState_Snake
@@ -78,26 +72,4 @@ func (pw *PlayerWrapper) Grow() {
 	x := points[len(points)-1].X
 	y := points[len(points)-1].Y
 	pw.SetPoints(append(points, &GameState_Coord{X: x, Y: y}))
-}
-
-// todo move to ui!
-func (pw *PlayerWrapper) Draw(screen *ebiten.Image, grid *Grid) {
-	rectImage := ebiten.NewImage(int(grid.RectWidth), int(grid.RectHeight))
-	rectImage.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
-
-	curX := float64(pw.Snake.Points[0].X) * float64(grid.RectWidth)
-	curY := float64(pw.Snake.Points[0].Y) * float64(grid.RectHeight)
-
-	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(curX, curY)
-	screen.DrawImage(rectImage, opts)
-
-	for i := 1; i < len(pw.Snake.Points); i++ {
-		curX = curX + float64(grid.RectWidth)*float64(pw.Snake.Points[i].X)
-		curY = curY + float64(grid.RectHeight)*float64(pw.Snake.Points[i].Y)
-
-		opts := &ebiten.DrawImageOptions{}
-		opts.GeoM.Translate(curX, curY)
-		screen.DrawImage(rectImage, opts)
-	}
 }

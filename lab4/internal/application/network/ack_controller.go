@@ -1,6 +1,7 @@
 package network
 
 import (
+	"snake-game/internal/domain"
 	"sync"
 	"time"
 )
@@ -17,7 +18,8 @@ type AckStatus struct {
 	doAutoCheck bool
 	sendTime    time.Time
 
-	msg *Msg
+	msg    *Msg
+	ackMsg *domain.GameMessage
 }
 type AckController struct {
 	ackMap   map[int64]*AckStatus
@@ -27,47 +29,48 @@ type AckController struct {
 	sendChan       *chan Msg
 }
 
-func NewAckController(sendChan *chan Msg, resendInt time.Duration) *AckController {
+func NewAckController(sendChan *chan Msg) *AckController {
 	ackMap := make(map[int64]*AckStatus)
-	ac := &AckController{ackMap, sync.Mutex{}, resendInt, sendChan}
-	go ac.daemonRoutine()
+	ac := &AckController{ackMap, sync.Mutex{}, 1000 * time.Millisecond, sendChan}
 	return ac
 }
 
 func (ac *AckController) addAckMsg(msg *Msg, msgSec int64, doAutoCheck bool) {
 	ac.ackMutex.Lock()
 	defer ac.ackMutex.Unlock()
-	ac.ackMap[msgSec] = &AckStatus{Sent, doAutoCheck, time.Now(), msg}
+	ac.ackMap[msgSec] = &AckStatus{Sent, doAutoCheck, time.Now(), msg, nil}
 }
 
-func (ac *AckController) checkAck(msgNum int64) bool {
+func (ac *AckController) checkAck(msgNum int64) (bool, *domain.GameMessage) {
 	ac.ackMutex.Lock()
 	defer ac.ackMutex.Unlock()
 	status, ok := ac.ackMap[msgNum]
 	if ok && status.wasAck == Ack {
 		delete(ac.ackMap, msgNum)
 	}
-	return ok && status.wasAck == Ack
+	return ok && status.wasAck == Ack, status.ackMsg
 }
 
-func (ac *AckController) setAck(msgNum int64) {
+func (ac *AckController) setAck(msgNum int64, ackMsg *domain.GameMessage) {
 	ac.ackMutex.Lock()
 	defer ac.ackMutex.Unlock()
-	if ack, ok := ac.ackMap[msgNum]; ok {
-		ack.wasAck = Ack
+	if _, ok := ac.ackMap[msgNum]; ok {
+		ac.ackMap[msgNum].wasAck = Ack
+		ac.ackMap[msgNum].ackMsg = ackMsg
 	}
 }
 
 func (ac *AckController) daemonRoutine() {
 	for {
+		time.Sleep(ac.resendInterval)
 		ac.ackMutex.Lock()
 
 		var keysToDelete []int64
 		var messagesToResend []*Msg
 
 		for k, v := range ac.ackMap {
-			if time.Since(v.sendTime) > ac.resendInterval {
-				v.sendTime = time.Now()
+			if v.wasAck == Sent && time.Since(v.sendTime) > ac.resendInterval {
+				ac.ackMap[k].sendTime = time.Now()
 				messagesToResend = append(messagesToResend, v.msg)
 			}
 
@@ -84,6 +87,5 @@ func (ac *AckController) daemonRoutine() {
 		for _, msg := range messagesToResend {
 			*ac.sendChan <- *msg
 		}
-		time.Sleep(ac.resendInterval)
 	}
 }

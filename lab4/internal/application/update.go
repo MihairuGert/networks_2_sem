@@ -80,12 +80,12 @@ func (g *Game) Update() error {
 	case Menu:
 		g.Menu.Update()
 	case Play:
-		switch g.GameSession.Node.Role() {
+		err := g.handleIncomingMessages()
+		if err != nil {
+			fmt.Println(err)
+		}
+		switch g.GameSession.Node.Role() { //todo refactor update: make it state-dependent!
 		case domain.NodeRole_MASTER:
-			err := g.handleIncomingMessages()
-			if err != nil {
-				fmt.Println(err)
-			}
 			for i := range g.controllers {
 				g.controllers[i].Update()
 			}
@@ -96,6 +96,7 @@ func (g *Game) Update() error {
 				g.sendState()
 			}
 		case domain.NodeRole_DEPUTY:
+
 		case domain.NodeRole_NORMAL:
 		case domain.NodeRole_VIEWER:
 		}

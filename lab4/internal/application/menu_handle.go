@@ -5,9 +5,6 @@ import (
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
 	"time"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"golang.org/x/image/colornames"
 )
 
 func (g *Game) handleNewGame() {
@@ -18,25 +15,29 @@ func (g *Game) handleNewGame() {
 }
 
 func (g *Game) startGame() {
-	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
-
 	config, err := ui.ParseConfig("conf.yaml")
 	if err != nil {
 		panic(err)
 	}
 	g.GameSession = domain.NewGameSession(config, float32(screenWidthGlobal), float32(screenHeightGlobal))
-	g.Renderer = &renderer
-	g.Renderer.SetGridImage(g.GameSession.Grid)
+	g.setUpRenderer()
 
 	g.GameSession.BecomeMaster()
 
-	g.controllers = make(map[int]domain.Controller)
+	g.controllers = make(map[int]*ui.Controller)
 	controller := ui.Controller{}
 	controller.SetPlayer(1, 1, "me", 0)
+	g.GameSession.SetMyID(0)
 	g.addPlayer(&controller)
 
 	g.lastFoodSpawnTime = time.Now()
 	g.foodSpawnInt = time.Second * 3
+}
+
+func (g *Game) setUpRenderer() {
+	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
+	g.Renderer = &renderer
+	g.Renderer.SetGridImage(g.GameSession.Grid)
 }
 
 func (g *Game) startNetwork() {
@@ -63,17 +64,27 @@ func (g *Game) handleConnect() {
 		if err != nil {
 			continue
 		}
-		g.networkManager.SetAckControllerResendInt(time.Duration(game.Msg.Config.StateDelayMs / 10))
 		break
 	}
+	g.networkManager.StartAckDaemonWithDuration(time.Duration(game.Msg.Config.StateDelayMs/10) * time.Millisecond)
 	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
-	for g.networkManager.CheckAck(seqNum) == false {
+	var ok bool
+	var ackMsg *domain.GameMessage
+	for {
+		ok, ackMsg = g.networkManager.CheckAck(seqNum)
+		if ok {
+			break
+		}
 		err := g.handleIncomingMessages()
 		if err != nil {
 			continue
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Duration(game.Msg.Config.StateDelayMs/100) * time.Millisecond)
 	}
+	g.GameSession = domain.NewGameSession(game.Msg.Config, float32(screenWidthGlobal), float32(screenHeightGlobal))
+	g.GameSession.SetMyID(int(ackMsg.ReceiverId))
+	g.setUpRenderer()
+	g.GameSession.BecomeNormal()
 	g.state = Play
 }
 
@@ -83,18 +94,4 @@ func (g *Game) handleExit() {
 	g.lastFlickTime = time.Now()
 	g.flickerInt = 25 * time.Millisecond
 	g.finalMsg = ui.NewText("", 24, 100, 100)
-}
-
-func (g *Game) drawFood(screen *ebiten.Image) {
-	for _, Food := range g.GameSession.State.Foods {
-		rectImage := ebiten.NewImage(int(g.GameSession.Grid.RectWidth), int(g.GameSession.Grid.RectHeight))
-		rectImage.Fill(colornames.Darkred)
-
-		curX := float64(Food.X) * float64(g.GameSession.Grid.RectWidth)
-		curY := float64(Food.Y) * float64(g.GameSession.Grid.RectHeight)
-
-		opts := &ebiten.DrawImageOptions{}
-		opts.GeoM.Translate(curX, curY)
-		screen.DrawImage(rectImage, opts)
-	}
 }

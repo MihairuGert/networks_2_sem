@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"net"
+	"snake-game/internal/domain"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,15 +28,15 @@ type Manager struct {
 	ackController *AckController
 }
 
-func (nm *Manager) SetAck(seqNum int64) {
-	nm.ackController.setAck(seqNum)
+func (nm *Manager) SetAck(seqNum int64, ackMsg *domain.GameMessage) {
+	nm.ackController.setAck(seqNum, ackMsg)
 }
 
 func (nm *Manager) NeedAck(msg *Msg, seqNum int64, doAutoCheck bool) {
 	nm.ackController.addAckMsg(msg, seqNum, doAutoCheck)
 }
 
-func (nm *Manager) CheckAck(seqNum int64) bool {
+func (nm *Manager) CheckAck(seqNum int64) (bool, *domain.GameMessage) {
 	return nm.ackController.checkAck(seqNum)
 }
 
@@ -61,7 +62,7 @@ func NewNetworkManager() *Manager {
 
 	sendChan := make(chan Msg, 100)
 
-	ac := NewAckController(&sendChan, 10*time.Millisecond)
+	ac := NewAckController(&sendChan)
 
 	nw := &Manager{
 		multicastSocket: mcs,
@@ -76,8 +77,9 @@ func NewNetworkManager() *Manager {
 	return nw
 }
 
-func (nm *Manager) SetAckControllerResendInt(duration time.Duration) {
+func (nm *Manager) StartAckDaemonWithDuration(duration time.Duration) {
 	nm.ackController.resendInterval = duration
+	go nm.ackController.daemonRoutine()
 }
 
 func newUnicastSocket() (*net.UDPConn, error) {
@@ -168,6 +170,7 @@ func (nm *Manager) sendGoroutine() {
 		for msg := range nm.sendChan {
 			_, err := nm.unicastSocket.WriteTo(msg.data, msg.addr)
 			if err != nil {
+				//fmt.Println(msg.addr, len(msg.data))
 				panic(err)
 			}
 		}

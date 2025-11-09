@@ -11,6 +11,19 @@ type Controller struct {
 	currentMovement domain.Direction
 }
 
+func (c *Controller) Player() *domain.GamePlayer {
+	return c.player.Player
+}
+
+func (c *Controller) Snake() *domain.GameState_Snake {
+	return c.player.Snake
+}
+
+func (c *Controller) SetIpAndPort(ip string, port int32) {
+	c.player.Player.IpAddress = ip
+	c.player.Player.Port = port
+}
+
 func (c *Controller) Id() int32 {
 	return c.player.Player.Id
 }
@@ -55,8 +68,4 @@ func (c *Controller) Update() {
 	case ebiten.IsKeyPressed(ebiten.KeyS):
 		c.currentMovement = domain.Direction_DOWN
 	}
-}
-
-func (c *Controller) DrawPlayer(screen *ebiten.Image, grid *domain.Grid) {
-	c.player.Draw(screen, grid)
 }
