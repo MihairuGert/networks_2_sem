@@ -9,8 +9,8 @@ type GameSession struct {
 	Node Node
 	Grid *Grid
 
+	Players []*PlayerWrapper
 	Config  *GameConfig
-	Players GamePlayers
 	State   *GameState
 
 	myID int

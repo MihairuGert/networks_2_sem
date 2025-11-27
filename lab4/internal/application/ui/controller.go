@@ -7,8 +7,7 @@ import (
 )
 
 type Controller struct {
-	player          *domain.PlayerWrapper
-	currentMovement domain.Direction
+	player *domain.PlayerWrapper
 }
 
 func (c *Controller) Player() *domain.GamePlayer {
@@ -44,13 +43,12 @@ func (c *Controller) SetPoints(points []*domain.GameState_Coord) {
 	c.player.SetPoints(points)
 }
 
-func (c *Controller) SetPlayer(x, y int32, name string, id int32) {
-	c.player = domain.NewPlayer(x, y, name, id)
-	c.currentMovement = domain.Direction_RIGHT
+func (c *Controller) SetPlayer(player *domain.PlayerWrapper) {
+	c.player = player
 }
 
 func (c *Controller) Move() {
-	c.player.Move(c.currentMovement)
+	c.player.Move()
 }
 
 func (c *Controller) Kill() {
@@ -60,12 +58,12 @@ func (c *Controller) Kill() {
 func (c *Controller) Update() {
 	switch {
 	case ebiten.IsKeyPressed(ebiten.KeyW):
-		c.currentMovement = domain.Direction_UP
+		c.player.CurrentDirection = domain.Direction_UP
 	case ebiten.IsKeyPressed(ebiten.KeyA):
-		c.currentMovement = domain.Direction_LEFT
+		c.player.CurrentDirection = domain.Direction_LEFT
 	case ebiten.IsKeyPressed(ebiten.KeyD):
-		c.currentMovement = domain.Direction_RIGHT
+		c.player.CurrentDirection = domain.Direction_RIGHT
 	case ebiten.IsKeyPressed(ebiten.KeyS):
-		c.currentMovement = domain.Direction_DOWN
+		c.player.CurrentDirection = domain.Direction_DOWN
 	}
 }

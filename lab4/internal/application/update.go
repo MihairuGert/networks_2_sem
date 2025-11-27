@@ -25,8 +25,8 @@ func (g *Game) endGame() {
 }
 
 func (g *Game) checkBorders() {
-	for i, _ := range g.controllers {
-		points := g.controllers[i].GetPoints()
+	for i, _ := range g.GameSession.Players {
+		points := g.GameSession.Players[i].GetPoints()
 		if int(points[0].X) >= g.GameSession.Grid.Width {
 			points[0].X = 0
 			points[1].X = int32(g.GameSession.Grid.Width - 1)
@@ -43,21 +43,21 @@ func (g *Game) checkBorders() {
 			points[0].Y = int32(g.GameSession.Grid.Height - 1)
 			points[1].Y = -int32(g.GameSession.Grid.Height - 1)
 		}
-		g.controllers[i].SetPoints(points)
+		g.GameSession.Players[i].SetPoints(points)
 	}
 }
 
 func (g *Game) checkFood() {
-	for i, _ := range g.controllers {
+	for i, _ := range g.GameSession.Players {
 		for k, food := range g.GameSession.State.Foods {
-			points := g.controllers[i].GetPoints()
+			points := g.GameSession.Players[i].GetPoints()
 			head := points[0]
 			curx := head.X
 			cury := head.Y
 			for j := 1; j < len(points); j++ {
 				if (curx == food.X) && (cury == food.Y) {
 					// here logic of growth
-					g.controllers[i].GrowPlayer()
+					g.GameSession.Players[i].Grow()
 					g.GameSession.State.Foods = append(g.GameSession.State.Foods[:k], g.GameSession.State.Foods[k+1:]...)
 					break
 				}
@@ -86,9 +86,10 @@ func (g *Game) Update() error {
 		}
 		switch g.GameSession.Node.Role() { //todo refactor update: make it state-dependent!
 		case domain.NodeRole_MASTER:
-			for i := range g.controllers {
-				g.controllers[i].Update()
-			}
+			//for i := range g.GameSession.Players {
+			//	g.GameSession.Players[i].Update()
+			//}
+			g.controller.Update()
 			if time.Since(g.GameSession.LastIterationTime) >= time.Duration(g.GameSession.StateDelayMs())*time.Millisecond {
 				g.GameSession.LastIterationTime = time.Now()
 				g.computeNextIteration()
@@ -149,7 +150,5 @@ func (g *Game) findGame() (AvailableGame, error) {
 }
 
 func (g *Game) moveControllers() {
-	for i := range g.controllers {
-		g.controllers[i].Move()
-	}
+	g.controller.Move()
 }

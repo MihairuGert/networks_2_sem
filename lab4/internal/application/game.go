@@ -44,7 +44,7 @@ type Game struct {
 	Menu     *ui.Menu
 
 	GameSession *domain.GameSession
-	controllers map[int]*ui.Controller
+	controller  ui.Controller
 
 	handleChannel  chan network.Msg
 	networkManager *network.Manager
@@ -89,8 +89,15 @@ func (g *Game) setUpWindow() error {
 	return nil
 }
 
-func (g *Game) addPlayer(c *ui.Controller) {
-	g.controllers[int(c.Id())] = c
+func (g *Game) addController(controller ui.Controller) {
+	g.controller = controller
+}
+
+func (g *Game) addPlayer(gp *domain.GamePlayer) *domain.PlayerWrapper {
+	player := domain.NewPlayer(0, 0, gp)
+	player.CurrentDirection = domain.Direction_RIGHT
+	g.GameSession.Players = append(g.GameSession.Players, player)
+	return player
 }
 
 func (g *Game) Start() error {
@@ -104,9 +111,9 @@ func (g *Game) setState() {
 	g.GameSession.State.StateOrder = int32(g.GameSession.CurrentStateNum())
 	var players []*domain.GamePlayer
 	var snakes []*domain.GameState_Snake
-	for _, controller := range g.controllers {
-		players = append(players, controller.Player())
-		snakes = append(snakes, controller.Snake())
+	for _, controller := range g.GameSession.Players {
+		players = append(players, controller.Player)
+		snakes = append(snakes, controller.Snake)
 	}
 	g.GameSession.State.Snakes = snakes
 	g.GameSession.State.Players = &domain.GamePlayers{Players: players}

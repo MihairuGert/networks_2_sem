@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"snake-game/internal/application/network"
-	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
 	"strconv"
 	"strings"
@@ -202,12 +201,20 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		return nil
 	}
 
-	controller := ui.Controller{}
 	id := g.GameSession.GetFreePlayerId()
-	controller.SetPlayer(0, 0, msg.GetJoin().PlayerName, int32(id))
 	ipAddress, port := GetIpAndPort(srcAddr)
-	controller.SetIpAndPort(ipAddress, port)
-	g.addPlayer(&controller)
+
+	gp := domain.GamePlayer{
+		Name:      msg.GetJoin().GetPlayerName(),
+		Id:        int32(id),
+		IpAddress: ipAddress,
+		Port:      port,
+		Role:      domain.NodeRole_NORMAL,
+		Type:      domain.PlayerType_HUMAN,
+		Score:     0,
+	}
+
+	g.addPlayer(&gp)
 
 	msg.ReceiverId = int32(id)
 	err := g.sendAckTo(msg, srcAddr)

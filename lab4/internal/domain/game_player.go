@@ -3,16 +3,12 @@ package domain
 type PlayerWrapper struct {
 	Player *GamePlayer
 	Snake  *GameState_Snake
+
+	CurrentDirection Direction
 }
 
-func NewPlayer(x, y int32, name string, playerID int32) *PlayerWrapper {
-	player := &GamePlayer{
-		Name:  name,
-		Id:    playerID,
-		Role:  NodeRole_NORMAL,
-		Type:  PlayerType_HUMAN,
-		Score: 0,
-	}
+func NewPlayer(x, y int32, gp *GamePlayer) *PlayerWrapper {
+	player := gp
 
 	points := []*GameState_Coord{
 		{X: x, Y: y},
@@ -20,7 +16,7 @@ func NewPlayer(x, y int32, name string, playerID int32) *PlayerWrapper {
 	}
 
 	snake := &GameState_Snake{
-		PlayerId:      playerID,
+		PlayerId:      gp.Id,
 		Points:        points,
 		State:         GameState_Snake_ALIVE,
 		HeadDirection: Direction_RIGHT,
@@ -40,13 +36,13 @@ func (pw *PlayerWrapper) SetPoints(points []*GameState_Coord) {
 	pw.Snake.Points = points
 }
 
-func (pw *PlayerWrapper) Move(direction Direction) {
+func (pw *PlayerWrapper) Move() {
 	for i := len(pw.Snake.Points) - 1; i > 1; i-- {
 		pw.Snake.Points[i].X = pw.Snake.Points[i-1].X
 		pw.Snake.Points[i].Y = pw.Snake.Points[i-1].Y
 	}
 
-	pw.Snake.HeadDirection = direction
+	pw.Snake.HeadDirection = pw.CurrentDirection
 	switch pw.Snake.HeadDirection {
 	case Direction_UP:
 		pw.Snake.Points[0].Y -= 1

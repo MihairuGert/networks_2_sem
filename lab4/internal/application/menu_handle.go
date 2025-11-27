@@ -24,12 +24,22 @@ func (g *Game) startGame() {
 
 	g.GameSession.BecomeMaster()
 
-	g.controllers = make(map[int]*ui.Controller)
 	controller := ui.Controller{}
-	controller.SetPlayer(1, 1, "me", 0)
 	g.GameSession.SetMyID(0)
-	g.addPlayer(&controller)
+	gp := domain.GamePlayer{
+		Name:      "me",
+		Id:        0,
+		IpAddress: "",
+		Port:      0,
+		Role:      0,
+		Type:      0,
+		Score:     0,
+	}
+	player := g.addPlayer(&gp)
+	controller.SetPlayer(player)
+	g.addController(controller)
 
+	// todo should be taken from config
 	g.lastFoodSpawnTime = time.Now()
 	g.foodSpawnInt = time.Second * 3
 }
