@@ -94,6 +94,7 @@ func (g *Game) handleConnect() {
 	g.GameSession = domain.NewGameSession(game.Msg.Config, float32(screenWidthGlobal), float32(screenHeightGlobal))
 	g.GameSession.SetMyID(ackMsg.ReceiverId)
 	g.setUpRenderer()
+	g.GameSession.Node.SetMasterAddr(game.Addr())
 	g.GameSession.BecomeNormal()
 
 	controller := ui.Controller{}

@@ -49,7 +49,7 @@ func (g *Game) sendAnnouncementTo(addr string) error {
 	if err != nil {
 		return err
 	}
-	err = g.networkManager.SendMsg(data, addr)
+	err = g.networkManager.SendMsg(&data, addr)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (g *Game) discoverGame() error {
 		return err
 	}
 
-	err = g.networkManager.SendMsg(data, network.MulticastAddress)
+	err = g.networkManager.SendMsg(&data, network.MulticastAddress)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (g *Game) JoinGame(masterAddr string, gameName string, viewOnly bool) int64
 		return -1
 	}
 
-	err = g.networkManager.SendMsg(data, masterAddr)
+	err = g.networkManager.SendMsg(&data, masterAddr)
 	if err != nil {
 		fmt.Printf("Failed to send join: %v\n", err)
 		return -1
@@ -236,7 +236,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 
 	gp := domain.GamePlayer{
 		Name:      msg.GetJoin().GetPlayerName(),
-		Id:        int32(id),
+		Id:        id,
 		IpAddress: ipAddress,
 		Port:      port,
 		Role:      domain.NodeRole_NORMAL,
@@ -246,7 +246,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 
 	g.GameSession.AddPlayer(&gp)
 
-	msg.ReceiverId = int32(id)
+	msg.ReceiverId = id
 	err := g.sendAckTo(msg, srcAddr)
 	if err != nil {
 		return err
@@ -268,7 +268,7 @@ func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 	if err != nil {
 		return err
 	}
-	err = g.networkManager.SendMsg(data, dest)
+	err = g.networkManager.SendMsg(&data, dest)
 	if err != nil {
 		return err
 	}
@@ -291,9 +291,24 @@ func (g *Game) sendState() error {
 	if err != nil {
 		return err
 	}
-	err = g.networkManager.SendMsg(data, network.MulticastAddress)
+	err = g.sendToAllPlayers(&data)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (g *Game) sendToAllPlayers(data *[]byte) error {
+	for i := range g.GameSession.Players {
+		if g.GameSession.Players[i].Player.Id == g.GameSession.MyID() {
+			continue
+		}
+		ip := g.GameSession.Players[i].Player.IpAddress
+		port := g.GameSession.Players[i].Player.Port
+		err := g.networkManager.SendMsg(data, ip+":"+strconv.FormatInt(int64(port), 10))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -314,7 +329,7 @@ func (g *Game) sendSteer() error {
 	if err != nil {
 		return err
 	}
-	err = g.networkManager.SendMsg(data, network.MulticastAddress)
+	err = g.networkManager.SendMsg(&data, g.GameSession.Node.MasterAddr())
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,8 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+var Recheck = errors.New("recheck")
+
 func (g *Game) endGame() {
 	elapsed := time.Since(g.shutdownTime)
 	g.finalMsg.SetText("Goodbye!!")
@@ -137,10 +139,14 @@ func (g *Game) findGame() (AvailableGame, error) {
 	for i, game := range availableGames {
 		fmt.Printf("%d) %s, %v\n", i, game.Msg.GameName, game.Msg.CanJoin)
 	}
+	fmt.Printf("%d) Recheck\n", len(availableGames))
 	ind := -1
 	_, err := fmt.Scan(&ind)
 	if err != nil {
 		return AvailableGame{}, err
+	}
+	if ind == len(availableGames) {
+		return AvailableGame{}, Recheck
 	}
 	if ind < 0 || ind >= len(g.availableGames) {
 		return AvailableGame{}, errors.New("invalid game index")

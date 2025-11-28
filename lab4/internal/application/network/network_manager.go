@@ -108,13 +108,13 @@ func newMulticastSocket() (*net.UDPConn, error) {
 	return conn, nil
 }
 
-func (nm *Manager) SendMsg(msg []byte, strAddr string) error {
+func (nm *Manager) SendMsg(msg *[]byte, strAddr string) error {
 	addr, err := StringToAddr(strAddr)
 	if err != nil {
 		return err
 	}
 	nm.sendChan <- Msg{
-		data: msg,
+		data: *msg,
 		addr: addr,
 	}
 	return nil
