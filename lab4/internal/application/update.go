@@ -71,7 +71,7 @@ func (g *Game) checkFood() {
 func (g *Game) addFood() {
 	if time.Since(g.lastFoodSpawnTime) >= g.foodSpawnInt {
 		g.lastFoodSpawnTime = time.Now()
-		g.GameSession.GenerateFood(1)
+		g.GameSession.GenerateFood()
 	}
 }
 
@@ -112,6 +112,7 @@ func (g *Game) computeNextIteration() {
 	g.Renderer.Update()
 	g.moveControllers()
 	g.checkBorders()
+	g.checkPlayerCollision()
 	g.checkFood()
 	g.addFood()
 	g.GameSession.IncrementStateNum()
@@ -152,4 +153,8 @@ func (g *Game) moveControllers() {
 	for i, _ := range g.GameSession.Players {
 		g.GameSession.Players[i].Move()
 	}
+}
+
+func (g *Game) checkPlayerCollision() {
+	g.GameSession.CheckCollisions()
 }

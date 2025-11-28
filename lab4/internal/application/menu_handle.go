@@ -35,7 +35,7 @@ func (g *Game) startGame() {
 		Type:      0,
 		Score:     0,
 	}
-	player := g.addPlayer(&gp)
+	player, _ := g.GameSession.AddPlayer(&gp)
 	controller.SetPlayer(player)
 	g.addController(controller)
 

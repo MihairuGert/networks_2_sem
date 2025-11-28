@@ -94,12 +94,12 @@ func (g *Game) addController(controller ui.Controller) {
 	g.controller = controller
 }
 
-func (g *Game) addPlayer(gp *domain.GamePlayer) *domain.PlayerWrapper {
-	player := domain.NewPlayer(0, 0, gp)
-	player.CurrentDirection = domain.Direction_RIGHT
-	g.GameSession.Players = append(g.GameSession.Players, player)
-	return player
-}
+//func (g *Game) addPlayer(gp *domain.GamePlayer) *domain.PlayerWrapper {
+//	player := domain.NewPlayer(0, 0, gp)
+//	player.CurrentDirection = domain.Direction_RIGHT
+//	g.GameSession.Players = append(g.GameSession.Players, player)
+//	return player
+//}
 
 func (g *Game) Start() error {
 	if err := ebiten.RunGame(g); err != nil {

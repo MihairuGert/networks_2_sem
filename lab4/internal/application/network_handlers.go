@@ -159,6 +159,9 @@ func (g *Game) handleIncomingMessages() error {
 			state := gameMsg.GetState().State
 			g.GameSession.State = state
 		case *domain.GameMessage_Steer:
+			if g.GameSession == nil {
+				continue
+			}
 			if g.GameSession.Node.Role() != domain.NodeRole_MASTER {
 				continue
 			}
@@ -181,7 +184,9 @@ func (g *Game) handleSteer(msg *domain.GameMessage) error {
 		if g.GameSession.Players[i].Player.Id != msg.SenderId {
 			continue
 		}
-		g.GameSession.Players[i].CurrentDirection = steer.GetDirection()
+		if domain.IsDirectionValid(g.GameSession.Players[i].CurrentDirection, steer.GetDirection()) {
+			g.GameSession.Players[i].CurrentDirection = steer.GetDirection()
+		}
 	}
 	return nil
 }
@@ -239,7 +244,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		Score:     0,
 	}
 
-	g.addPlayer(&gp)
+	g.GameSession.AddPlayer(&gp)
 
 	msg.ReceiverId = int32(id)
 	err := g.sendAckTo(msg, srcAddr)

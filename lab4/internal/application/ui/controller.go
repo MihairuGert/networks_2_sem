@@ -63,15 +63,22 @@ func (c *Controller) Update() {
 	if c.player == nil {
 		return
 	}
+	chosenDir := domain.Direction_RIGHT
 
 	switch {
 	case ebiten.IsKeyPressed(ebiten.KeyW):
-		c.player.CurrentDirection = domain.Direction_UP
+		chosenDir = domain.Direction_UP
 	case ebiten.IsKeyPressed(ebiten.KeyA):
-		c.player.CurrentDirection = domain.Direction_LEFT
+		chosenDir = domain.Direction_LEFT
 	case ebiten.IsKeyPressed(ebiten.KeyD):
-		c.player.CurrentDirection = domain.Direction_RIGHT
+		chosenDir = domain.Direction_RIGHT
 	case ebiten.IsKeyPressed(ebiten.KeyS):
-		c.player.CurrentDirection = domain.Direction_DOWN
+		chosenDir = domain.Direction_DOWN
+	default:
+		return
+	}
+
+	if domain.IsDirectionValid(c.player.CurrentDirection, chosenDir) {
+		c.player.CurrentDirection = chosenDir
 	}
 }
