@@ -13,19 +13,21 @@ type GameSession struct {
 	Config  *GameConfig
 	State   *GameState
 
-	myID int
+	Me *PlayerWrapper
 
-	nextPlayerId    int
+	myID int32
+
+	nextPlayerId    int32
 	currentStateNum int
 
 	LastIterationTime time.Time
 }
 
-func (gs *GameSession) MyID() int {
+func (gs *GameSession) MyID() int32 {
 	return gs.myID
 }
 
-func (gs *GameSession) SetMyID(myID int) {
+func (gs *GameSession) SetMyID(myID int32) {
 	gs.myID = myID
 }
 
@@ -51,7 +53,7 @@ func (gs *GameSession) CurrentStateNum() int {
 }
 
 // GetFreePlayerId guarantees to return a free id.
-func (gs *GameSession) GetFreePlayerId() int {
+func (gs *GameSession) GetFreePlayerId() int32 {
 	temp := gs.nextPlayerId
 	gs.nextPlayerId++
 	return temp

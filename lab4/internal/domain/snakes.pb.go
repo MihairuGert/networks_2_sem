@@ -227,8 +227,8 @@ type GamePlayer struct {
 	Id            int32                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`                               // Уникальный идентификатор игрока в пределах игры
 	IpAddress     string                 `protobuf:"bytes,3,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"` // IPv4 или IPv6 адрес игрока в виде строки. Отсутствует в описании игрока-отправителя сообщения
 	Port          int32                  `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`                           // Порт UDP-сокета игрока. Отсутствует в описании игрока-отправителя сообщения
-	Role          NodeRole               `protobuf:"varint,5,opt,name=role,proto3,enum=snakes.NodeRole" json:"role,omitempty"`      // Роль узла в топологии
-	Type          PlayerType             `protobuf:"varint,6,opt,name=type,proto3,enum=snakes.PlayerType" json:"type,omitempty"`    // Тип игрока
+	Role          NodeRole               `protobuf:"varint,5,opt,name=role,proto3,enum=NodeRole" json:"role,omitempty"`             // Роль узла в топологии
+	Type          PlayerType             `protobuf:"varint,6,opt,name=type,proto3,enum=PlayerType" json:"type,omitempty"`           // Тип игрока
 	Score         int32                  `protobuf:"varint,7,opt,name=score,proto3" json:"score,omitempty"`                         // Число очков, которые набрал игрок
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -319,7 +319,7 @@ type GameConfig struct {
 	Width         int32                  `protobuf:"varint,1,opt,name=width,proto3" json:"width,omitempty"`                                     // Ширина поля в клетках (от 10 до 100)
 	Height        int32                  `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`                                   // Высота поля в клетках (от 10 до 100)
 	FoodStatic    int32                  `protobuf:"varint,3,opt,name=food_static,json=foodStatic,proto3" json:"food_static,omitempty"`         // Количество клеток с едой, независимо от числа игроков (от 0 до 100)
-	StateDelayMs  int32                  `protobuf:"varint,5,opt,name=state_delay_ms,json=stateDelayMs,proto3" json:"state_delay_ms,omitempty"` // Задержка между ходами (сменой состояний) в игре, в миллисекундах (от 100 до 3000)
+	StateDelayMs  int32                  `protobuf:"varint,4,opt,name=state_delay_ms,json=stateDelayMs,proto3" json:"state_delay_ms,omitempty"` // Задержка между ходами (сменой состояний) в игре, в миллисекундах (от 100 до 3000)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -848,8 +848,8 @@ type GameState_Snake struct {
 	// Каждая следующая - смещение следующей "ключевой" точки относительно предыдущей,
 	// в частности последняя точка хранит смещение хвоста змеи относительно предыдущей "ключевой" точки.
 	Points        []*GameState_Coord         `protobuf:"bytes,2,rep,name=points,proto3" json:"points,omitempty"`
-	State         GameState_Snake_SnakeState `protobuf:"varint,3,opt,name=state,proto3,enum=snakes.GameState_Snake_SnakeState" json:"state,omitempty"`                     // статус змеи в игре
-	HeadDirection Direction                  `protobuf:"varint,4,opt,name=head_direction,json=headDirection,proto3,enum=snakes.Direction" json:"head_direction,omitempty"` // Направление, в котором "повёрнута" голова змейки в текущий момент
+	State         GameState_Snake_SnakeState `protobuf:"varint,3,opt,name=state,proto3,enum=GameState_Snake_SnakeState" json:"state,omitempty"`                     // статус змеи в игре
+	HeadDirection Direction                  `protobuf:"varint,4,opt,name=head_direction,json=headDirection,proto3,enum=Direction" json:"head_direction,omitempty"` // Направление, в котором "повёрнута" голова змейки в текущий момент
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -952,7 +952,7 @@ func (*GameMessage_PingMsg) Descriptor() ([]byte, []int) {
 // Не-центральный игрок просит повернуть голову змеи
 type GameMessage_SteerMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Direction     Direction              `protobuf:"varint,1,opt,name=direction,proto3,enum=snakes.Direction" json:"direction,omitempty"` // Куда повернуть на следующем шаге
+	Direction     Direction              `protobuf:"varint,1,opt,name=direction,proto3,enum=Direction" json:"direction,omitempty"` // Куда повернуть на следующем шаге
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1161,10 +1161,10 @@ func (*GameMessage_DiscoverMsg) Descriptor() ([]byte, []int) {
 // Новый игрок хочет присоединиться к идущей игре
 type GameMessage_JoinMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PlayerType    PlayerType             `protobuf:"varint,1,opt,name=player_type,json=playerType,proto3,enum=snakes.PlayerType" json:"player_type,omitempty"`        // Тип присоединяющегося игрока
-	PlayerName    string                 `protobuf:"bytes,3,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`                                // Имя игрока
-	GameName      string                 `protobuf:"bytes,4,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`                                      // Глобально уникальное имя игры, к которой хотим присоединиться
-	RequestedRole NodeRole               `protobuf:"varint,5,opt,name=requested_role,json=requestedRole,proto3,enum=snakes.NodeRole" json:"requested_role,omitempty"` // NORMAL, если хотим играть; VIEWER, если хотим только понаблюдать; остальные значения недопустимы
+	PlayerType    PlayerType             `protobuf:"varint,1,opt,name=player_type,json=playerType,proto3,enum=PlayerType" json:"player_type,omitempty"`        // Тип присоединяющегося игрока
+	PlayerName    string                 `protobuf:"bytes,3,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`                         // Имя игрока
+	GameName      string                 `protobuf:"bytes,4,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`                               // Глобально уникальное имя игры, к которой хотим присоединиться
+	RequestedRole NodeRole               `protobuf:"varint,5,opt,name=requested_role,json=requestedRole,proto3,enum=NodeRole" json:"requested_role,omitempty"` // NORMAL, если хотим играть; VIEWER, если хотим только понаблюдать; остальные значения недопустимы
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1280,8 +1280,8 @@ func (x *GameMessage_ErrorMsg) GetErrorMessage() string {
 // 5. в комбинации с 2 от главного узла заместителю о том, что он становится главным (receiver_role = MASTER)
 type GameMessage_RoleChangeMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SenderRole    NodeRole               `protobuf:"varint,1,opt,name=sender_role,json=senderRole,proto3,enum=snakes.NodeRole" json:"sender_role,omitempty"`
-	ReceiverRole  NodeRole               `protobuf:"varint,2,opt,name=receiver_role,json=receiverRole,proto3,enum=snakes.NodeRole" json:"receiver_role,omitempty"`
+	SenderRole    NodeRole               `protobuf:"varint,1,opt,name=sender_role,json=senderRole,proto3,enum=NodeRole" json:"sender_role,omitempty"`
+	ReceiverRole  NodeRole               `protobuf:"varint,2,opt,name=receiver_role,json=receiverRole,proto3,enum=NodeRole" json:"receiver_role,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1334,16 +1334,16 @@ var File_snakes_proto protoreflect.FileDescriptor
 
 const file_snakes_proto_rawDesc = "" +
 	"\n" +
-	"\fsnakes.proto\x12\x06snakes\"\xc7\x01\n" +
+	"\fsnakes.proto\"\xb9\x01\n" +
 	"\n" +
 	"GamePlayer\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x05R\x02id\x12\x1d\n" +
 	"\n" +
 	"ip_address\x18\x03 \x01(\tR\tipAddress\x12\x12\n" +
-	"\x04port\x18\x04 \x01(\x05R\x04port\x12$\n" +
-	"\x04role\x18\x05 \x01(\x0e2\x10.snakes.NodeRoleR\x04role\x12&\n" +
-	"\x04type\x18\x06 \x01(\x0e2\x12.snakes.PlayerTypeR\x04type\x12\x14\n" +
+	"\x04port\x18\x04 \x01(\x05R\x04port\x12\x1d\n" +
+	"\x04role\x18\x05 \x01(\x0e2\t.NodeRoleR\x04role\x12\x1f\n" +
+	"\x04type\x18\x06 \x01(\x0e2\v.PlayerTypeR\x04type\x12\x14\n" +
 	"\x05score\x18\a \x01(\x05R\x05score\"\x81\x01\n" +
 	"\n" +
 	"GameConfig\x12\x14\n" +
@@ -1351,71 +1351,74 @@ const file_snakes_proto_rawDesc = "" +
 	"\x06height\x18\x02 \x01(\x05R\x06height\x12\x1f\n" +
 	"\vfood_static\x18\x03 \x01(\x05R\n" +
 	"foodStatic\x12$\n" +
-	"\x0estate_delay_ms\x18\x05 \x01(\x05R\fstateDelayMs\";\n" +
-	"\vGamePlayers\x12,\n" +
-	"\aplayers\x18\x01 \x03(\v2\x12.snakes.GamePlayerR\aplayers\"\xd1\x03\n" +
+	"\x0estate_delay_ms\x18\x04 \x01(\x05R\fstateDelayMs\"4\n" +
+	"\vGamePlayers\x12%\n" +
+	"\aplayers\x18\x01 \x03(\v2\v.GamePlayerR\aplayers\"\xa7\x03\n" +
 	"\tGameState\x12\x1f\n" +
 	"\vstate_order\x18\x01 \x01(\x05R\n" +
-	"stateOrder\x12/\n" +
-	"\x06snakes\x18\x02 \x03(\v2\x17.snakes.GameState.SnakeR\x06snakes\x12-\n" +
-	"\x05foods\x18\x03 \x03(\v2\x17.snakes.GameState.CoordR\x05foods\x12-\n" +
-	"\aplayers\x18\x04 \x01(\v2\x13.snakes.GamePlayersR\aplayers\x1a#\n" +
+	"stateOrder\x12(\n" +
+	"\x06snakes\x18\x02 \x03(\v2\x10.GameState.SnakeR\x06snakes\x12&\n" +
+	"\x05foods\x18\x03 \x03(\v2\x10.GameState.CoordR\x05foods\x12&\n" +
+	"\aplayers\x18\x04 \x01(\v2\f.GamePlayersR\aplayers\x1a#\n" +
 	"\x05Coord\x12\f\n" +
 	"\x01x\x18\x01 \x01(\x11R\x01x\x12\f\n" +
-	"\x01y\x18\x02 \x01(\x11R\x01y\x1a\xee\x01\n" +
+	"\x01y\x18\x02 \x01(\x11R\x01y\x1a\xd9\x01\n" +
 	"\x05Snake\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x01(\x05R\bplayerId\x12/\n" +
-	"\x06points\x18\x02 \x03(\v2\x17.snakes.GameState.CoordR\x06points\x128\n" +
-	"\x05state\x18\x03 \x01(\x0e2\".snakes.GameState.Snake.SnakeStateR\x05state\x128\n" +
-	"\x0ehead_direction\x18\x04 \x01(\x0e2\x11.snakes.DirectionR\rheadDirection\"#\n" +
+	"\tplayer_id\x18\x01 \x01(\x05R\bplayerId\x12(\n" +
+	"\x06points\x18\x02 \x03(\v2\x10.GameState.CoordR\x06points\x121\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x1b.GameState.Snake.SnakeStateR\x05state\x121\n" +
+	"\x0ehead_direction\x18\x04 \x01(\x0e2\n" +
+	".DirectionR\rheadDirection\"#\n" +
 	"\n" +
 	"SnakeState\x12\t\n" +
 	"\x05ALIVE\x10\x00\x12\n" +
 	"\n" +
-	"\x06ZOMBIE\x10\x01\"\xa5\x01\n" +
-	"\x10GameAnnouncement\x12-\n" +
-	"\aplayers\x18\x01 \x01(\v2\x13.snakes.GamePlayersR\aplayers\x12*\n" +
-	"\x06config\x18\x02 \x01(\v2\x12.snakes.GameConfigR\x06config\x12\x19\n" +
+	"\x06ZOMBIE\x10\x01\"\x97\x01\n" +
+	"\x10GameAnnouncement\x12&\n" +
+	"\aplayers\x18\x01 \x01(\v2\f.GamePlayersR\aplayers\x12#\n" +
+	"\x06config\x18\x02 \x01(\v2\v.GameConfigR\x06config\x12\x19\n" +
 	"\bcan_join\x18\x03 \x01(\bR\acanJoin\x12\x1b\n" +
-	"\tgame_name\x18\x04 \x01(\tR\bgameName\"\xb1\t\n" +
+	"\tgame_name\x18\x04 \x01(\tR\bgameName\"\xc1\b\n" +
 	"\vGameMessage\x12\x17\n" +
 	"\amsg_seq\x18\x01 \x01(\x03R\x06msgSeq\x12\x1b\n" +
 	"\tsender_id\x18\n" +
 	" \x01(\x05R\bsenderId\x12\x1f\n" +
 	"\vreceiver_id\x18\v \x01(\x05R\n" +
-	"receiverId\x121\n" +
-	"\x04ping\x18\x02 \x01(\v2\x1b.snakes.GameMessage.PingMsgH\x00R\x04ping\x124\n" +
-	"\x05steer\x18\x03 \x01(\v2\x1c.snakes.GameMessage.SteerMsgH\x00R\x05steer\x12.\n" +
-	"\x03ack\x18\x04 \x01(\v2\x1a.snakes.GameMessage.AckMsgH\x00R\x03ack\x124\n" +
-	"\x05state\x18\x05 \x01(\v2\x1c.snakes.GameMessage.StateMsgH\x00R\x05state\x12I\n" +
-	"\fannouncement\x18\x06 \x01(\v2#.snakes.GameMessage.AnnouncementMsgH\x00R\fannouncement\x121\n" +
-	"\x04join\x18\a \x01(\v2\x1b.snakes.GameMessage.JoinMsgH\x00R\x04join\x124\n" +
-	"\x05error\x18\b \x01(\v2\x1c.snakes.GameMessage.ErrorMsgH\x00R\x05error\x12D\n" +
-	"\vrole_change\x18\t \x01(\v2!.snakes.GameMessage.RoleChangeMsgH\x00R\n" +
-	"roleChange\x12=\n" +
-	"\bdiscover\x18\f \x01(\v2\x1f.snakes.GameMessage.DiscoverMsgH\x00R\bdiscover\x1a\t\n" +
-	"\aPingMsg\x1a;\n" +
-	"\bSteerMsg\x12/\n" +
-	"\tdirection\x18\x01 \x01(\x0e2\x11.snakes.DirectionR\tdirection\x1a\b\n" +
-	"\x06AckMsg\x1a3\n" +
-	"\bStateMsg\x12'\n" +
-	"\x05state\x18\x01 \x01(\v2\x11.snakes.GameStateR\x05state\x1aA\n" +
-	"\x0fAnnouncementMsg\x12.\n" +
-	"\x05games\x18\x01 \x03(\v2\x18.snakes.GameAnnouncementR\x05games\x1a\r\n" +
-	"\vDiscoverMsg\x1a\xb5\x01\n" +
-	"\aJoinMsg\x123\n" +
-	"\vplayer_type\x18\x01 \x01(\x0e2\x12.snakes.PlayerTypeR\n" +
+	"receiverId\x12*\n" +
+	"\x04ping\x18\x02 \x01(\v2\x14.GameMessage.PingMsgH\x00R\x04ping\x12-\n" +
+	"\x05steer\x18\x03 \x01(\v2\x15.GameMessage.SteerMsgH\x00R\x05steer\x12'\n" +
+	"\x03ack\x18\x04 \x01(\v2\x13.GameMessage.AckMsgH\x00R\x03ack\x12-\n" +
+	"\x05state\x18\x05 \x01(\v2\x15.GameMessage.StateMsgH\x00R\x05state\x12B\n" +
+	"\fannouncement\x18\x06 \x01(\v2\x1c.GameMessage.AnnouncementMsgH\x00R\fannouncement\x12*\n" +
+	"\x04join\x18\a \x01(\v2\x14.GameMessage.JoinMsgH\x00R\x04join\x12-\n" +
+	"\x05error\x18\b \x01(\v2\x15.GameMessage.ErrorMsgH\x00R\x05error\x12=\n" +
+	"\vrole_change\x18\t \x01(\v2\x1a.GameMessage.RoleChangeMsgH\x00R\n" +
+	"roleChange\x126\n" +
+	"\bdiscover\x18\f \x01(\v2\x18.GameMessage.DiscoverMsgH\x00R\bdiscover\x1a\t\n" +
+	"\aPingMsg\x1a4\n" +
+	"\bSteerMsg\x12(\n" +
+	"\tdirection\x18\x01 \x01(\x0e2\n" +
+	".DirectionR\tdirection\x1a\b\n" +
+	"\x06AckMsg\x1a,\n" +
+	"\bStateMsg\x12 \n" +
+	"\x05state\x18\x01 \x01(\v2\n" +
+	".GameStateR\x05state\x1a:\n" +
+	"\x0fAnnouncementMsg\x12'\n" +
+	"\x05games\x18\x01 \x03(\v2\x11.GameAnnouncementR\x05games\x1a\r\n" +
+	"\vDiscoverMsg\x1a\xa7\x01\n" +
+	"\aJoinMsg\x12,\n" +
+	"\vplayer_type\x18\x01 \x01(\x0e2\v.PlayerTypeR\n" +
 	"playerType\x12\x1f\n" +
 	"\vplayer_name\x18\x03 \x01(\tR\n" +
 	"playerName\x12\x1b\n" +
-	"\tgame_name\x18\x04 \x01(\tR\bgameName\x127\n" +
-	"\x0erequested_role\x18\x05 \x01(\x0e2\x10.snakes.NodeRoleR\rrequestedRole\x1a/\n" +
+	"\tgame_name\x18\x04 \x01(\tR\bgameName\x120\n" +
+	"\x0erequested_role\x18\x05 \x01(\x0e2\t.NodeRoleR\rrequestedRole\x1a/\n" +
 	"\bErrorMsg\x12#\n" +
-	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x1ay\n" +
-	"\rRoleChangeMsg\x121\n" +
-	"\vsender_role\x18\x01 \x01(\x0e2\x10.snakes.NodeRoleR\n" +
-	"senderRole\x125\n" +
-	"\rreceiver_role\x18\x02 \x01(\x0e2\x10.snakes.NodeRoleR\freceiverRoleB\x06\n" +
+	"\rerror_message\x18\x01 \x01(\tR\ferrorMessage\x1ak\n" +
+	"\rRoleChangeMsg\x12*\n" +
+	"\vsender_role\x18\x01 \x01(\x0e2\t.NodeRoleR\n" +
+	"senderRole\x12.\n" +
+	"\rreceiver_role\x18\x02 \x01(\x0e2\t.NodeRoleR\freceiverRoleB\x06\n" +
 	"\x04Type*:\n" +
 	"\bNodeRole\x12\n" +
 	"\n" +
@@ -1434,7 +1437,7 @@ const file_snakes_proto_rawDesc = "" +
 	"\x02UP\x10\x00\x12\b\n" +
 	"\x04DOWN\x10\x01\x12\b\n" +
 	"\x04LEFT\x10\x02\x12\t\n" +
-	"\x05RIGHT\x10\x03B\x15Z\x13../internal/domain/b\x06proto3"
+	"\x05RIGHT\x10\x03B\tZ\a./protob\x06proto3"
 
 var (
 	file_snakes_proto_rawDescOnce sync.Once
@@ -1451,56 +1454,56 @@ func file_snakes_proto_rawDescGZIP() []byte {
 var file_snakes_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_snakes_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_snakes_proto_goTypes = []any{
-	(NodeRole)(0),                       // 0: snakes.NodeRole
-	(PlayerType)(0),                     // 1: snakes.PlayerType
-	(Direction)(0),                      // 2: snakes.Direction
-	(GameState_Snake_SnakeState)(0),     // 3: snakes.GameState.Snake.SnakeState
-	(*GamePlayer)(nil),                  // 4: snakes.GamePlayer
-	(*GameConfig)(nil),                  // 5: snakes.GameConfig
-	(*GamePlayers)(nil),                 // 6: snakes.GamePlayers
-	(*GameState)(nil),                   // 7: snakes.GameState
-	(*GameAnnouncement)(nil),            // 8: snakes.GameAnnouncement
-	(*GameMessage)(nil),                 // 9: snakes.GameMessage
-	(*GameState_Coord)(nil),             // 10: snakes.GameState.Coord
-	(*GameState_Snake)(nil),             // 11: snakes.GameState.Snake
-	(*GameMessage_PingMsg)(nil),         // 12: snakes.GameMessage.PingMsg
-	(*GameMessage_SteerMsg)(nil),        // 13: snakes.GameMessage.SteerMsg
-	(*GameMessage_AckMsg)(nil),          // 14: snakes.GameMessage.AckMsg
-	(*GameMessage_StateMsg)(nil),        // 15: snakes.GameMessage.StateMsg
-	(*GameMessage_AnnouncementMsg)(nil), // 16: snakes.GameMessage.AnnouncementMsg
-	(*GameMessage_DiscoverMsg)(nil),     // 17: snakes.GameMessage.DiscoverMsg
-	(*GameMessage_JoinMsg)(nil),         // 18: snakes.GameMessage.JoinMsg
-	(*GameMessage_ErrorMsg)(nil),        // 19: snakes.GameMessage.ErrorMsg
-	(*GameMessage_RoleChangeMsg)(nil),   // 20: snakes.GameMessage.RoleChangeMsg
+	(NodeRole)(0),                       // 0: NodeRole
+	(PlayerType)(0),                     // 1: PlayerType
+	(Direction)(0),                      // 2: Direction
+	(GameState_Snake_SnakeState)(0),     // 3: GameState.Snake.SnakeState
+	(*GamePlayer)(nil),                  // 4: GamePlayer
+	(*GameConfig)(nil),                  // 5: GameConfig
+	(*GamePlayers)(nil),                 // 6: GamePlayers
+	(*GameState)(nil),                   // 7: GameState
+	(*GameAnnouncement)(nil),            // 8: GameAnnouncement
+	(*GameMessage)(nil),                 // 9: GameMessage
+	(*GameState_Coord)(nil),             // 10: GameState.Coord
+	(*GameState_Snake)(nil),             // 11: GameState.Snake
+	(*GameMessage_PingMsg)(nil),         // 12: GameMessage.PingMsg
+	(*GameMessage_SteerMsg)(nil),        // 13: GameMessage.SteerMsg
+	(*GameMessage_AckMsg)(nil),          // 14: GameMessage.AckMsg
+	(*GameMessage_StateMsg)(nil),        // 15: GameMessage.StateMsg
+	(*GameMessage_AnnouncementMsg)(nil), // 16: GameMessage.AnnouncementMsg
+	(*GameMessage_DiscoverMsg)(nil),     // 17: GameMessage.DiscoverMsg
+	(*GameMessage_JoinMsg)(nil),         // 18: GameMessage.JoinMsg
+	(*GameMessage_ErrorMsg)(nil),        // 19: GameMessage.ErrorMsg
+	(*GameMessage_RoleChangeMsg)(nil),   // 20: GameMessage.RoleChangeMsg
 }
 var file_snakes_proto_depIdxs = []int32{
-	0,  // 0: snakes.GamePlayer.role:type_name -> snakes.NodeRole
-	1,  // 1: snakes.GamePlayer.type:type_name -> snakes.PlayerType
-	4,  // 2: snakes.GamePlayers.players:type_name -> snakes.GamePlayer
-	11, // 3: snakes.GameState.snakes:type_name -> snakes.GameState.Snake
-	10, // 4: snakes.GameState.foods:type_name -> snakes.GameState.Coord
-	6,  // 5: snakes.GameState.players:type_name -> snakes.GamePlayers
-	6,  // 6: snakes.GameAnnouncement.players:type_name -> snakes.GamePlayers
-	5,  // 7: snakes.GameAnnouncement.config:type_name -> snakes.GameConfig
-	12, // 8: snakes.GameMessage.ping:type_name -> snakes.GameMessage.PingMsg
-	13, // 9: snakes.GameMessage.steer:type_name -> snakes.GameMessage.SteerMsg
-	14, // 10: snakes.GameMessage.ack:type_name -> snakes.GameMessage.AckMsg
-	15, // 11: snakes.GameMessage.state:type_name -> snakes.GameMessage.StateMsg
-	16, // 12: snakes.GameMessage.announcement:type_name -> snakes.GameMessage.AnnouncementMsg
-	18, // 13: snakes.GameMessage.join:type_name -> snakes.GameMessage.JoinMsg
-	19, // 14: snakes.GameMessage.error:type_name -> snakes.GameMessage.ErrorMsg
-	20, // 15: snakes.GameMessage.role_change:type_name -> snakes.GameMessage.RoleChangeMsg
-	17, // 16: snakes.GameMessage.discover:type_name -> snakes.GameMessage.DiscoverMsg
-	10, // 17: snakes.GameState.Snake.points:type_name -> snakes.GameState.Coord
-	3,  // 18: snakes.GameState.Snake.state:type_name -> snakes.GameState.Snake.SnakeState
-	2,  // 19: snakes.GameState.Snake.head_direction:type_name -> snakes.Direction
-	2,  // 20: snakes.GameMessage.SteerMsg.direction:type_name -> snakes.Direction
-	7,  // 21: snakes.GameMessage.StateMsg.state:type_name -> snakes.GameState
-	8,  // 22: snakes.GameMessage.AnnouncementMsg.games:type_name -> snakes.GameAnnouncement
-	1,  // 23: snakes.GameMessage.JoinMsg.player_type:type_name -> snakes.PlayerType
-	0,  // 24: snakes.GameMessage.JoinMsg.requested_role:type_name -> snakes.NodeRole
-	0,  // 25: snakes.GameMessage.RoleChangeMsg.sender_role:type_name -> snakes.NodeRole
-	0,  // 26: snakes.GameMessage.RoleChangeMsg.receiver_role:type_name -> snakes.NodeRole
+	0,  // 0: GamePlayer.role:type_name -> NodeRole
+	1,  // 1: GamePlayer.type:type_name -> PlayerType
+	4,  // 2: GamePlayers.players:type_name -> GamePlayer
+	11, // 3: GameState.snakes:type_name -> GameState.Snake
+	10, // 4: GameState.foods:type_name -> GameState.Coord
+	6,  // 5: GameState.players:type_name -> GamePlayers
+	6,  // 6: GameAnnouncement.players:type_name -> GamePlayers
+	5,  // 7: GameAnnouncement.config:type_name -> GameConfig
+	12, // 8: GameMessage.ping:type_name -> GameMessage.PingMsg
+	13, // 9: GameMessage.steer:type_name -> GameMessage.SteerMsg
+	14, // 10: GameMessage.ack:type_name -> GameMessage.AckMsg
+	15, // 11: GameMessage.state:type_name -> GameMessage.StateMsg
+	16, // 12: GameMessage.announcement:type_name -> GameMessage.AnnouncementMsg
+	18, // 13: GameMessage.join:type_name -> GameMessage.JoinMsg
+	19, // 14: GameMessage.error:type_name -> GameMessage.ErrorMsg
+	20, // 15: GameMessage.role_change:type_name -> GameMessage.RoleChangeMsg
+	17, // 16: GameMessage.discover:type_name -> GameMessage.DiscoverMsg
+	10, // 17: GameState.Snake.points:type_name -> GameState.Coord
+	3,  // 18: GameState.Snake.state:type_name -> GameState.Snake.SnakeState
+	2,  // 19: GameState.Snake.head_direction:type_name -> Direction
+	2,  // 20: GameMessage.SteerMsg.direction:type_name -> Direction
+	7,  // 21: GameMessage.StateMsg.state:type_name -> GameState
+	8,  // 22: GameMessage.AnnouncementMsg.games:type_name -> GameAnnouncement
+	1,  // 23: GameMessage.JoinMsg.player_type:type_name -> PlayerType
+	0,  // 24: GameMessage.JoinMsg.requested_role:type_name -> NodeRole
+	0,  // 25: GameMessage.RoleChangeMsg.sender_role:type_name -> NodeRole
+	0,  // 26: GameMessage.RoleChangeMsg.receiver_role:type_name -> NodeRole
 	27, // [27:27] is the sub-list for method output_type
 	27, // [27:27] is the sub-list for method input_type
 	27, // [27:27] is the sub-list for extension type_name

@@ -51,11 +51,19 @@ func (c *Controller) Move() {
 	c.player.Move()
 }
 
+func (c *Controller) Direction() domain.Direction {
+	return c.player.CurrentDirection
+}
+
 func (c *Controller) Kill() {
 	c.player.Snake.State = domain.GameState_Snake_ZOMBIE
 }
 
 func (c *Controller) Update() {
+	if c.player == nil {
+		return
+	}
+
 	switch {
 	case ebiten.IsKeyPressed(ebiten.KeyW):
 		c.player.CurrentDirection = domain.Direction_UP

@@ -84,12 +84,9 @@ func (g *Game) Update() error {
 		if err != nil {
 			fmt.Println(err)
 		}
-		switch g.GameSession.Node.Role() { //todo refactor update: make it state-dependent!
+		g.controller.Update()
+		switch g.GameSession.Node.Role() {
 		case domain.NodeRole_MASTER:
-			//for i := range g.GameSession.Players {
-			//	g.GameSession.Players[i].Update()
-			//}
-			g.controller.Update()
 			if time.Since(g.GameSession.LastIterationTime) >= time.Duration(g.GameSession.StateDelayMs())*time.Millisecond {
 				g.GameSession.LastIterationTime = time.Now()
 				g.computeNextIteration()
@@ -97,9 +94,11 @@ func (g *Game) Update() error {
 				g.sendState()
 			}
 		case domain.NodeRole_DEPUTY:
-
+			g.sendSteer()
 		case domain.NodeRole_NORMAL:
+			g.sendSteer()
 		case domain.NodeRole_VIEWER:
+			g.sendSteer()
 		}
 	case End:
 		g.endGame()
@@ -150,5 +149,7 @@ func (g *Game) findGame() (AvailableGame, error) {
 }
 
 func (g *Game) moveControllers() {
-	g.controller.Move()
+	for i, _ := range g.GameSession.Players {
+		g.GameSession.Players[i].Move()
+	}
 }

@@ -138,9 +138,8 @@ func StringToAddr(addr string) (*net.UDPAddr, error) {
 }
 
 func (nm *Manager) ListenMulticast() error {
-	buffer := make([]byte, 65507)
-
 	for {
+		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.multicastSocket.ReadFromUDP(buffer)
 		if err != nil {
 			fmt.Printf("Multicast read error: %v\n", err)
@@ -152,9 +151,8 @@ func (nm *Manager) ListenMulticast() error {
 }
 
 func (nm *Manager) ListenUnicast() error {
-	buffer := make([]byte, 65507)
-
 	for {
+		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.unicastSocket.ReadFromUDP(buffer)
 		if err != nil {
 			fmt.Printf("Unicast read error: %v\n", err)

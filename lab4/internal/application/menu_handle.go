@@ -25,7 +25,7 @@ func (g *Game) startGame() {
 	g.GameSession.BecomeMaster()
 
 	controller := ui.Controller{}
-	g.GameSession.SetMyID(0)
+	g.GameSession.SetMyID(g.GameSession.GetFreePlayerId())
 	gp := domain.GamePlayer{
 		Name:      "me",
 		Id:        0,
@@ -92,9 +92,16 @@ func (g *Game) handleConnect() {
 		time.Sleep(time.Duration(game.Msg.Config.StateDelayMs/100) * time.Millisecond)
 	}
 	g.GameSession = domain.NewGameSession(game.Msg.Config, float32(screenWidthGlobal), float32(screenHeightGlobal))
-	g.GameSession.SetMyID(int(ackMsg.ReceiverId))
+	g.GameSession.SetMyID(ackMsg.ReceiverId)
 	g.setUpRenderer()
 	g.GameSession.BecomeNormal()
+
+	controller := ui.Controller{}
+	g.myPlayer = &domain.PlayerWrapper{}
+	g.myPlayer.CurrentDirection = domain.Direction_RIGHT
+	controller.SetPlayer(g.myPlayer)
+	g.addController(controller)
+
 	g.state = Play
 }
 
