@@ -1,9 +1,11 @@
 package application
 
 import (
+	"fmt"
 	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
+	"strings"
 	"time"
 )
 
@@ -76,8 +78,21 @@ func (g *Game) handleConnect() {
 		}
 		break
 	}
+	viewOnly := true
+	if game.Msg.GetCanJoin() == true {
+		fmt.Println("Do you want to play the game?[Y/N]")
+		char := ""
+		fmt.Scan(&char)
+		switch strings.ToLower(char) {
+		case "y":
+			viewOnly = false
+		default:
+			viewOnly = true
+		}
+	}
+	// todo move to init?
 	g.networkManager.StartAckDaemonWithDuration(time.Duration(game.Msg.Config.StateDelayMs/10) * time.Millisecond)
-	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), game.Msg.GetCanJoin())
+	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), viewOnly)
 	var ok bool
 	var ackMsg *domain.GameMessage
 	for {
@@ -95,7 +110,11 @@ func (g *Game) handleConnect() {
 	g.GameSession.SetMyID(ackMsg.ReceiverId)
 	g.setUpRenderer()
 	g.GameSession.Node.SetMasterAddr(game.Addr())
-	g.GameSession.BecomeNormal()
+	if viewOnly {
+		g.GameSession.BecomeViewer()
+	} else {
+		g.GameSession.BecomeNormal()
+	}
 
 	controller := ui.Controller{}
 	g.myPlayer = &domain.PlayerWrapper{}

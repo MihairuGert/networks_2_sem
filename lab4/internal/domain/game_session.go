@@ -67,6 +67,10 @@ func (gs *GameSession) BecomeNormal() {
 	gs.Node.role = NodeRole_NORMAL
 }
 
+func (gs *GameSession) BecomeViewer() {
+	gs.Node.role = NodeRole_VIEWER
+}
+
 func (gs *GameSession) GenerateFood() {
 	requiredFood := gs.Config.FoodStatic + gs.countAliveSnakes()
 
@@ -279,22 +283,36 @@ func (gs *GameSession) normalizeY(y int32) int32 {
 }
 
 func (gs *GameSession) AddPlayer(player *GamePlayer) (*PlayerWrapper, bool) {
-	headX, headY, tailDirection, found := gs.getFree5x5Square()
-	if !found {
-		return nil, false
+	switch player.Role {
+	case NodeRole_NORMAL:
+		headX, headY, tailDirection, found := gs.getFree5x5Square()
+		if !found {
+			return nil, false
+		}
+
+		snake := gs.createSnakeForPlayer(player, headX, headY, tailDirection)
+
+		pw := &PlayerWrapper{
+			Player:           player,
+			Snake:            snake,
+			CurrentDirection: getOppositeDirection(tailDirection),
+		}
+
+		gs.Players = append(gs.Players, pw)
+
+		return pw, true
+	case NodeRole_VIEWER:
+		pw := &PlayerWrapper{
+			Player:           player,
+			Snake:            nil,
+			CurrentDirection: Direction_RIGHT,
+		}
+
+		gs.Players = append(gs.Players, pw)
+
+		return pw, true
 	}
-
-	snake := gs.createSnakeForPlayer(player, headX, headY, tailDirection)
-
-	pw := &PlayerWrapper{
-		Player:           player,
-		Snake:            snake,
-		CurrentDirection: getOppositeDirection(tailDirection),
-	}
-
-	gs.Players = append(gs.Players, pw)
-
-	return pw, true
+	return nil, false
 }
 
 func (gs *GameSession) createSnakeForPlayer(player *GamePlayer, headX, headY int32, tailDirection Direction) *GameState_Snake {
@@ -375,12 +393,10 @@ func (gs *GameSession) CheckCollisions() {
 		}
 	}
 
-	for playerId := range deadSnakes {
-		for i := range gs.Players {
-			if gs.Players[i].Player.Id == playerId {
-				gs.Players = append(gs.Players[:i], gs.Players[i+1:]...)
-				break
-			}
+	for i := range gs.Players {
+		if _, ok := deadSnakes[gs.Players[i].Player.Id]; ok {
+			gs.Players[i].Snake = nil
+			break
 		}
 	}
 }

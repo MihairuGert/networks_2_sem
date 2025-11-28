@@ -28,6 +28,9 @@ func (g *Game) endGame() {
 
 func (g *Game) checkBorders() {
 	for i, _ := range g.GameSession.Players {
+		if g.GameSession.Players[i].Snake == nil {
+			continue
+		}
 		points := g.GameSession.Players[i].GetPoints()
 		if int(points[0].X) >= g.GameSession.Grid.Width {
 			points[0].X = 0
@@ -51,6 +54,9 @@ func (g *Game) checkBorders() {
 
 func (g *Game) checkFood() {
 	for i, _ := range g.GameSession.Players {
+		if g.GameSession.Players[i].Snake == nil {
+			continue
+		}
 		for k, food := range g.GameSession.State.Foods {
 			points := g.GameSession.Players[i].GetPoints()
 			head := points[0]
@@ -100,7 +106,6 @@ func (g *Game) Update() error {
 		case domain.NodeRole_NORMAL:
 			g.sendSteer()
 		case domain.NodeRole_VIEWER:
-			g.sendSteer()
 		}
 	case End:
 		g.endGame()

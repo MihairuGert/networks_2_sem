@@ -239,7 +239,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		Id:        id,
 		IpAddress: ipAddress,
 		Port:      port,
-		Role:      domain.NodeRole_NORMAL,
+		Role:      msg.GetJoin().RequestedRole,
 		Type:      domain.PlayerType_HUMAN,
 		Score:     0,
 	}

@@ -37,6 +37,9 @@ func (pw *PlayerWrapper) SetPoints(points []*GameState_Coord) {
 }
 
 func (pw *PlayerWrapper) Move() {
+	if pw.Snake == nil {
+		return
+	}
 	for i := len(pw.Snake.Points) - 1; i > 1; i-- {
 		pw.Snake.Points[i].X = pw.Snake.Points[i-1].X
 		pw.Snake.Points[i].Y = pw.Snake.Points[i-1].Y

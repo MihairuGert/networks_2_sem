@@ -27,6 +27,7 @@ type gameState int
 const (
 	Menu gameState = iota
 	Play
+	GameSelection
 	End
 )
 
@@ -114,6 +115,9 @@ func (g *Game) setState() {
 	var snakes []*domain.GameState_Snake
 	for _, controller := range g.GameSession.Players {
 		players = append(players, controller.Player)
+		if controller.Snake == nil {
+			continue
+		}
 		snakes = append(snakes, controller.Snake)
 	}
 	g.GameSession.State.Snakes = snakes
