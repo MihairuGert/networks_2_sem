@@ -282,16 +282,21 @@ func (g *Game) checkPlayersConnection() error {
 			deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
 			g.GameSession.Node.SetMasterAddr(deputyAddress)
 		case domain.NodeRole_MASTER:
-			// todo add zombie creation
-			//deputy := g.getDeputy()
-			//if deputy == nil {
-			//	g.GameSession.ChooseDeputy()
-			//	return nil
-			//}
-			//deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
-			//if deputyAddress == playerAddr {
-			//	g.GameSession.ChooseDeputy()
-			//}
+			deputy := g.getDeputy()
+			for i := range g.GameSession.Players {
+				if formatAddress(g.GameSession.Players[i].Player.IpAddress, g.GameSession.Players[i].Player.Port) == playerAddr {
+					g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
+					break
+				}
+			}
+			if deputy == nil {
+				g.ChooseDeputy()
+				return nil
+			}
+			deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
+			if deputyAddress == playerAddr {
+				g.ChooseDeputy()
+			}
 		case domain.NodeRole_DEPUTY:
 			if playerAddr == g.GameSession.Node.MasterAddr() {
 				g.GameSession.BecomeMaster()

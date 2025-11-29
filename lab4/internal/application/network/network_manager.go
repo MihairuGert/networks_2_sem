@@ -209,7 +209,7 @@ func (nm *Manager) ListenUnicast() error {
 		}
 
 		var gameMsg domain.GameMessage
-		if err := proto.Unmarshal(buffer[:n], &gameMsg); err == nil {
+		if err = proto.Unmarshal(buffer[:n], &gameMsg); err == nil {
 			switch gameMsg.Type.(type) {
 			case *domain.GameMessage_Announcement, *domain.GameMessage_Discover, *domain.GameMessage_Ack, *domain.GameMessage_Join, *domain.GameMessage_RoleChange:
 			default:
