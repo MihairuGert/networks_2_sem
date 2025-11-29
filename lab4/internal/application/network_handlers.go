@@ -131,7 +131,6 @@ func (g *Game) startListening() {
 
 func (g *Game) handleIncomingMessages() error {
 	if g.GameSession != nil {
-		////	g.checkPlayersToPing()
 		err := g.checkPlayersConnection()
 		if err != nil {
 			return err
@@ -141,7 +140,6 @@ func (g *Game) handleIncomingMessages() error {
 	for _, msg := range messages {
 		var gameMsg domain.GameMessage
 		if err := proto.Unmarshal(msg.Data(), &gameMsg); err != nil {
-			println("Failed to unmarshal gameMessage")
 			continue
 		}
 		switch gameMsg.Type.(type) {
@@ -150,7 +148,6 @@ func (g *Game) handleIncomingMessages() error {
 			if err != nil {
 				return err
 			}
-
 		case *domain.GameMessage_Announcement:
 			err := g.handleAnnouncement(&gameMsg, msg.Addr().String())
 			if err != nil {
@@ -184,25 +181,13 @@ func (g *Game) handleIncomingMessages() error {
 			if err != nil {
 				continue
 			}
-			err = g.sendAckTo(&gameMsg, msg.Addr().String())
-			if err != nil {
-				return err
-			}
 		case *domain.GameMessage_Error:
 			g.networkManager.SetErr(gameMsg.MsgSeq, &gameMsg)
 			return errors.New(gameMsg.GetError().ErrorMessage)
 		case *domain.GameMessage_Ping:
-			err := g.sendAckTo(&gameMsg, msg.Addr().String())
-			if err != nil {
-				return err
-			}
 			return nil
 		case *domain.GameMessage_RoleChange:
-			err := g.sendAckTo(&gameMsg, msg.Addr().String())
-			if err != nil {
-				return err
-			}
-			err = g.handleRoleChg(&gameMsg)
+			err := g.handleRoleChg(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
@@ -211,11 +196,58 @@ func (g *Game) handleIncomingMessages() error {
 	return nil
 }
 
-func (g *Game) handleRoleChg(msg *domain.GameMessage) error {
+func (g *Game) handleRoleChg(msg *domain.GameMessage, srcAddr string) error {
+	if g.GameSession == nil {
+		return nil
+	}
 	rchg := msg.GetRoleChange()
 	switch {
 	case rchg.ReceiverRole == domain.NodeRole_DEPUTY:
 		g.GameSession.BecomeDeputy()
+	}
+	err := g.sendAckTo(msg, srcAddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
+	if g.state != Play && g.GameSession.Node.Role() != domain.NodeRole_MASTER {
+		return nil
+	}
+
+	id := g.GameSession.GetFreePlayerId()
+	ipAddress, port := GetIpAndPort(srcAddr)
+
+	gp := domain.GamePlayer{
+		Name:      msg.GetJoin().GetPlayerName(),
+		Id:        id,
+		IpAddress: ipAddress,
+		Port:      port,
+		Role:      msg.GetJoin().RequestedRole,
+		Type:      domain.PlayerType_HUMAN,
+		Score:     0,
+	}
+
+	_, canJoin := g.GameSession.AddPlayer(&gp)
+
+	if canJoin {
+		msg.ReceiverId = id
+		err := g.sendAckTo(msg, srcAddr)
+		if err != nil {
+			return err
+		}
+		err = g.ChooseDeputy()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err := g.sendErrorTo(msg, srcAddr)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -369,46 +401,6 @@ func (g *Game) handleAnnouncement(msg *domain.GameMessage, srcAddr string) error
 	g.availableGames[srcAddr] = AvailableGame{Msg: announcement.Games[0], addr: srcAddr}
 	g.availableGamesMutex.Unlock()
 
-	return nil
-}
-
-func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
-	if g.state != Play && g.GameSession.Node.Role() != domain.NodeRole_MASTER {
-		return nil
-	}
-
-	id := g.GameSession.GetFreePlayerId()
-	ipAddress, port := GetIpAndPort(srcAddr)
-
-	gp := domain.GamePlayer{
-		Name:      msg.GetJoin().GetPlayerName(),
-		Id:        id,
-		IpAddress: ipAddress,
-		Port:      port,
-		Role:      msg.GetJoin().RequestedRole,
-		Type:      domain.PlayerType_HUMAN,
-		Score:     0,
-	}
-
-	_, canJoin := g.GameSession.AddPlayer(&gp)
-
-	if canJoin {
-		msg.ReceiverId = id
-		err := g.sendAckTo(msg, srcAddr)
-		if err != nil {
-			return err
-		}
-		err = g.ChooseDeputy()
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	err := g.sendErrorTo(msg, srcAddr)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

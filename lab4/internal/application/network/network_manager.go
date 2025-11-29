@@ -8,6 +8,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -185,12 +187,32 @@ func (nm *Manager) ListenUnicast() error {
 			continue
 		}
 
-		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
 		if srcAddr.String() == nm.unicastSocket.LocalAddr().String() {
 			continue
 		}
-		nm.recvPingMap.Store(srcAddr.String(), time.Now())
 
+		var gameMsg domain.GameMessage
+		if err := proto.Unmarshal(buffer[:n], &gameMsg); err == nil {
+			switch gameMsg.Type.(type) {
+			case *domain.GameMessage_Announcement, *domain.GameMessage_Discover, *domain.GameMessage_Ack, *domain.GameMessage_Join, *domain.GameMessage_RoleChange:
+			default:
+				ackMsg := &domain.GameMessage{
+					MsgSeq:     gameMsg.MsgSeq,
+					SenderId:   -1,
+					ReceiverId: gameMsg.SenderId,
+					Type: &domain.GameMessage_Ack{
+						Ack: &domain.GameMessage_AckMsg{},
+					},
+				}
+				data, err := proto.Marshal(ackMsg)
+				if err == nil {
+					nm.sendChan <- Msg{data: data, addr: srcAddr}
+				}
+			}
+		}
+
+		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
+		nm.recvPingMap.Store(srcAddr.String(), time.Now())
 	}
 }
 

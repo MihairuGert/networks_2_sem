@@ -14,6 +14,7 @@ func (g *Game) handleNewGame() {
 	g.startGame()
 	g.startNetwork()
 
+	g.networkManager.StartAckDaemonWithDuration(time.Duration(g.GameSession.Config.StateDelayMs/10) * time.Millisecond)
 	g.state = Play
 }
 
