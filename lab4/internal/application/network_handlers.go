@@ -271,7 +271,6 @@ func (g *Game) checkPlayersConnection() error {
 		return nil
 	}
 	for _, playerAddr := range disconnectedPlayers {
-		println(playerAddr)
 		switch g.GameSession.Node.Role() {
 		case domain.NodeRole_NORMAL:
 			deputy := g.getDeputy()
@@ -285,6 +284,9 @@ func (g *Game) checkPlayersConnection() error {
 			deputy := g.getDeputy()
 			for i := range g.GameSession.Players {
 				if formatAddress(g.GameSession.Players[i].Player.IpAddress, g.GameSession.Players[i].Player.Port) == playerAddr {
+					if g.GameSession.Players[i].Player.Role == domain.NodeRole_VIEWER {
+						continue
+					}
 					g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
 					break
 				}
@@ -312,6 +314,8 @@ func (g *Game) checkPlayersConnection() error {
 					return err
 				}
 			}
+		case domain.NodeRole_VIEWER:
+
 		}
 	}
 	return nil
