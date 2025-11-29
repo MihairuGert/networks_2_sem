@@ -51,6 +51,7 @@ type Game struct {
 	handleChannel  chan network.Msg
 	networkManager *network.Manager
 	goroutinePool  *errgroup.Group
+	shouldStop     bool
 
 	state               gameState
 	availableGames      map[string]AvailableGame

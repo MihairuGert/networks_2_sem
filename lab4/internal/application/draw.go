@@ -22,6 +22,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 		g.Renderer.DrawGrid(screen)
 		g.Renderer.DrawPlayerList(screen)
+		g.Renderer.ExitButton.Draw(screen)
 		g.drawSnakes(screen)
 		g.drawFood(screen)
 	case End:

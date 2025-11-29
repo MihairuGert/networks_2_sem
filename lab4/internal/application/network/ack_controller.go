@@ -28,11 +28,18 @@ type AckController struct {
 
 	resendInterval time.Duration
 	sendChan       *chan Msg
+
+	shouldStop *bool
 }
 
-func NewAckController(sendChan *chan Msg) *AckController {
+func NewAckController(sendChan *chan Msg, shouldStop *bool) *AckController {
 	ackMap := make(map[int64]*AckStatus)
-	ac := &AckController{ackMap, sync.Mutex{}, 1000 * time.Millisecond, sendChan}
+	ac := &AckController{
+		ackMap,
+		sync.Mutex{},
+		1000 * time.Millisecond,
+		sendChan,
+		shouldStop}
 	return ac
 }
 
@@ -76,6 +83,9 @@ func (ac *AckController) setErr(msgNum int64, errMsg *domain.GameMessage) {
 
 func (ac *AckController) daemonRoutine() {
 	for {
+		if *ac.shouldStop {
+			return
+		}
 		time.Sleep(ac.resendInterval)
 		ac.ackMutex.Lock()
 

@@ -13,7 +13,9 @@ type GameSessionRenderer struct {
 	gridImage    *ebiten.Image
 	ScreenWidth  float32
 	ScreenHeight float32
-	PlayerList   *PlayerList
+
+	PlayerList *PlayerList
+	ExitButton *TextButton
 }
 
 func (r *GameSessionRenderer) GetGridImage() *ebiten.Image {

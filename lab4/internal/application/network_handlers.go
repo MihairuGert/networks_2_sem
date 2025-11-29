@@ -17,6 +17,10 @@ func (g *Game) startAnnouncement() error {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		if g.shouldStop {
+			return nil
+		}
+
 		if g.GameSession == nil || g.GameSession.Node.Role() != domain.NodeRole_MASTER {
 			continue
 		}

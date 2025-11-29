@@ -16,6 +16,17 @@ func (g *Game) handleNewGame() {
 	g.state = Play
 }
 
+func (g *Game) handleExitGame() {
+	g.endGame()
+	g.stopNetwork()
+
+	g.state = Menu
+}
+
+func (g *Game) endGame() {
+
+}
+
 func (g *Game) startGame() {
 	config, err := ui.ParseConfig("conf.yaml")
 	if err != nil {
@@ -52,15 +63,21 @@ func (g *Game) setUpRenderer() {
 		ScreenWidth:  float32(screenWidthGlobal),
 		ScreenHeight: float32(screenHeightGlobal),
 		PlayerList:   ui.NewPlayerList(float64(screenWidthGlobal-300), 50, 25),
+		ExitButton:   ui.NewTextButton("Exit", 10, 10, screenHeightGlobal-200, 50, 50, g.handleExitGame),
 	}
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 }
 
 func (g *Game) startNetwork() {
-	g.networkManager = network.NewNetworkManager()
+	g.shouldStop = false
+	g.networkManager = network.NewNetworkManager(&g.shouldStop)
 	g.goroutinePool.Go(g.startAnnouncement)
 	g.startListening()
+}
+
+func (g *Game) stopNetwork() {
+	g.shouldStop = true
 }
 
 func (g *Game) handleConnect() {

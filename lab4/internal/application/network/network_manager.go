@@ -19,6 +19,8 @@ type Manager struct {
 	multicastSocket *net.UDPConn
 	unicastSocket   *net.UDPConn
 
+	shouldStop *bool
+
 	msgQueue    *MsgQueue
 	msgSeq      int64
 	msqSeqMutex sync.Mutex
@@ -51,7 +53,7 @@ func (nm *Manager) MsgSeq() int64 {
 	return nm.msgSeq - 1
 }
 
-func NewNetworkManager() *Manager {
+func NewNetworkManager(shouldStop *bool) *Manager {
 	mcs, err := newMulticastSocket()
 	if err != nil {
 		panic(err)
@@ -66,7 +68,7 @@ func NewNetworkManager() *Manager {
 
 	sendChan := make(chan Msg, 100)
 
-	ac := NewAckController(&sendChan)
+	ac := NewAckController(&sendChan, shouldStop)
 
 	nw := &Manager{
 		multicastSocket: mcs,
@@ -76,6 +78,7 @@ func NewNetworkManager() *Manager {
 		ackController:   ac,
 		sendChan:        sendChan,
 		msqSeqMutex:     sync.Mutex{},
+		shouldStop:      shouldStop,
 	}
 	go nw.sendGoroutine()
 	return nw
@@ -143,6 +146,9 @@ func StringToAddr(addr string) (*net.UDPAddr, error) {
 
 func (nm *Manager) ListenMulticast() error {
 	for {
+		if *nm.shouldStop {
+			return nil
+		}
 		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.multicastSocket.ReadFromUDP(buffer)
 		if err != nil {
@@ -156,6 +162,9 @@ func (nm *Manager) ListenMulticast() error {
 
 func (nm *Manager) ListenUnicast() error {
 	for {
+		if *nm.shouldStop {
+			return nil
+		}
 		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.unicastSocket.ReadFromUDP(buffer)
 		if err != nil {
@@ -170,6 +179,9 @@ func (nm *Manager) ListenUnicast() error {
 func (nm *Manager) sendGoroutine() {
 	for {
 		for msg := range nm.sendChan {
+			if *nm.shouldStop {
+				return
+			}
 			_, err := nm.unicastSocket.WriteTo(msg.data, msg.addr)
 			if err != nil {
 				//fmt.Println(msg.addr, len(msg.data))

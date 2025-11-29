@@ -12,7 +12,7 @@ import (
 
 var Recheck = errors.New("recheck")
 
-func (g *Game) endGame() {
+func (g *Game) endApplication() {
 	elapsed := time.Since(g.shutdownTime)
 	g.finalMsg.SetText("Goodbye!!")
 	g.finalMsg.SetColor(colornames.White)
@@ -98,6 +98,10 @@ func (g *Game) Update() error {
 			fmt.Println(err)
 		}
 		g.controller.Update()
+		g.Renderer.ExitButton.Update()
+		if g.shouldStop {
+			return nil
+		}
 		switch g.GameSession.Node.Role() {
 		case domain.NodeRole_MASTER:
 			if time.Since(g.GameSession.LastIterationTime) >= time.Duration(g.GameSession.StateDelayMs())*time.Millisecond {
@@ -114,7 +118,7 @@ func (g *Game) Update() error {
 		case domain.NodeRole_VIEWER:
 		}
 	case End:
-		g.endGame()
+		g.endApplication()
 	default:
 		panic("unhandled default case")
 	}

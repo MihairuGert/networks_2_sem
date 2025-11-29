@@ -8,6 +8,27 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+type TextButton struct {
+	Text *Text
+	b    *Button
+}
+
+func NewTextButton(text string, size, x, y, width, height int, onClick func()) *TextButton {
+	return &TextButton{
+		Text: NewText(text, float64(size), float64(x+width/8), float64(y+height/2)),
+		b:    NewButton(x, y, width, height, onClick),
+	}
+}
+
+func (tb *TextButton) Draw(screen *ebiten.Image) {
+	tb.b.Draw(screen)
+	tb.Text.Draw(screen)
+}
+
+func (tb *TextButton) Update() {
+	tb.b.Update()
+}
+
 type Button struct {
 	Rect         image.Rectangle
 	NormalImage  *ebiten.Image
