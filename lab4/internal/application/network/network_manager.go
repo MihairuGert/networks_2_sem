@@ -28,6 +28,10 @@ type Manager struct {
 	ackController *AckController
 }
 
+func (nm *Manager) SetErr(seqNum int64, errMsg *domain.GameMessage) {
+	nm.ackController.setErr(seqNum, errMsg)
+}
+
 func (nm *Manager) SetAck(seqNum int64, ackMsg *domain.GameMessage) {
 	nm.ackController.setAck(seqNum, ackMsg)
 }

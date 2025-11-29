@@ -66,6 +66,7 @@ func (g *Game) handleConnect() {
 	for {
 		err := g.handleIncomingMessages()
 		if err != nil {
+			println(err)
 			continue
 		}
 		err = g.discoverGame()
@@ -102,7 +103,8 @@ func (g *Game) handleConnect() {
 		}
 		err := g.handleIncomingMessages()
 		if err != nil {
-			continue
+			fmt.Printf("Got error:%s\n", err.Error())
+			return
 		}
 		time.Sleep(time.Duration(game.Msg.Config.StateDelayMs/100) * time.Millisecond)
 	}

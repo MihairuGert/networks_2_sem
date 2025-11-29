@@ -169,6 +169,9 @@ func (g *Game) handleIncomingMessages() error {
 			if err != nil {
 				continue
 			}
+		case *domain.GameMessage_Error:
+			g.networkManager.SetErr(gameMsg.MsgSeq, &gameMsg)
+			return errors.New(gameMsg.GetError().ErrorMessage)
 		}
 	}
 	return nil
@@ -244,10 +247,18 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		Score:     0,
 	}
 
-	g.GameSession.AddPlayer(&gp)
+	_, canJoin := g.GameSession.AddPlayer(&gp)
 
-	msg.ReceiverId = id
-	err := g.sendAckTo(msg, srcAddr)
+	if canJoin {
+		msg.ReceiverId = id
+		err := g.sendAckTo(msg, srcAddr)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err := g.sendErrorTo(msg, srcAddr)
 	if err != nil {
 		return err
 	}
@@ -265,6 +276,27 @@ func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
 	}
 
 	data, err := proto.Marshal(ackMsg)
+	if err != nil {
+		return err
+	}
+	err = g.networkManager.SendMsg(&data, dest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Game) sendErrorTo(msg *domain.GameMessage, dest string) error {
+	errMsg := &domain.GameMessage{
+		MsgSeq:     msg.MsgSeq,
+		SenderId:   g.GameSession.MyID(),
+		ReceiverId: -1,
+		Type: &domain.GameMessage_Error{
+			Error: &domain.GameMessage_ErrorMsg{ErrorMessage: "Not enough space on the grid. Try to become a viewer then."},
+		},
+	}
+
+	data, err := proto.Marshal(errMsg)
 	if err != nil {
 		return err
 	}

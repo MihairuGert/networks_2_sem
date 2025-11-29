@@ -11,6 +11,7 @@ type AckState int32
 const (
 	Sent AckState = iota
 	Ack
+	Error
 )
 
 type AckStatus struct {
@@ -48,6 +49,10 @@ func (ac *AckController) checkAck(msgNum int64) (bool, *domain.GameMessage) {
 	if ok && status.wasAck == Ack {
 		delete(ac.ackMap, msgNum)
 	}
+	if ok && status.wasAck == Error {
+		delete(ac.ackMap, msgNum)
+		return false, status.ackMsg
+	}
 	return ok && status.wasAck == Ack, status.ackMsg
 }
 
@@ -57,6 +62,15 @@ func (ac *AckController) setAck(msgNum int64, ackMsg *domain.GameMessage) {
 	if _, ok := ac.ackMap[msgNum]; ok {
 		ac.ackMap[msgNum].wasAck = Ack
 		ac.ackMap[msgNum].ackMsg = ackMsg
+	}
+}
+
+func (ac *AckController) setErr(msgNum int64, errMsg *domain.GameMessage) {
+	ac.ackMutex.Lock()
+	defer ac.ackMutex.Unlock()
+	if _, ok := ac.ackMap[msgNum]; ok {
+		ac.ackMap[msgNum].wasAck = Error
+		ac.ackMap[msgNum].ackMsg = errMsg
 	}
 }
 
