@@ -314,7 +314,8 @@ func (g *Game) removePlayer(playerAddr string) {
 			if g.GameSession.Players[i].Player.Role == domain.NodeRole_VIEWER {
 				continue
 			}
-			g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
+			g.GameSession.Players[i].Snake.State = domain.GameState_Snake_ZOMBIE
+			g.GameSession.Players[i].Player = nil
 			break
 		}
 	}
@@ -492,6 +493,9 @@ func (g *Game) sendState() error {
 
 func (g *Game) sendToAllPlayers(data *[]byte, msgSeq int64) error {
 	for i := range g.GameSession.Players {
+		if g.GameSession.Players[i].Player == nil {
+			continue
+		}
 		if g.GameSession.Players[i].Player.Id == g.GameSession.MyID() {
 			continue
 		}

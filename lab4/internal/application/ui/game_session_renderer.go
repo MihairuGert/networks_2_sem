@@ -69,8 +69,13 @@ func NewPlayerList(x, y, step float64) *PlayerList {
 func (pl *PlayerList) Update(players []*domain.GamePlayer) {
 	pl.playerTexts = nil
 
-	for i, player := range players {
-		text := NewText("", 14, pl.x, pl.y+float64(i)*pl.step)
+	dy := pl.y
+	for _, player := range players {
+		if player == nil {
+			continue
+		}
+		dy += pl.step
+		text := NewText("", 14, pl.x, dy)
 		text.SetText(pl.formatPlayer(player))
 		text.SetColor(colornames.White)
 		pl.playerTexts = append(pl.playerTexts, text)

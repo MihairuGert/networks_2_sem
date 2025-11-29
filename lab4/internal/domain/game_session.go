@@ -56,7 +56,10 @@ func (gs *GameSession) CurrentStateNum() int {
 func (gs *GameSession) GetFreePlayerId() int32 {
 	maxId := int32(-1)
 	for _, player := range gs.Players {
-		maxId = max(player.Player.Id, int32(maxId))
+		if player.Player == nil {
+			continue
+		}
+		maxId = max(player.Player.Id, maxId)
 	}
 	return maxId + 1
 }
@@ -98,7 +101,7 @@ func (gs *GameSession) ChooseDeputy() int {
 	}
 	ind := -1
 	for i := range gs.Players {
-		if gs.Players[i].Player.Id == gs.myID || gs.Players[i].Player.Role == NodeRole_VIEWER {
+		if gs.Players[i].Player == nil || gs.Players[i].Player.Id == gs.myID || gs.Players[i].Player.Role == NodeRole_VIEWER {
 			continue
 		}
 		if gs.Players[i].Player.Role == NodeRole_DEPUTY {
@@ -460,7 +463,7 @@ func (gs *GameSession) CheckCollisions() {
 	deadSnakes := make(map[int32]bool)
 
 	for _, player := range gs.Players {
-		if player == nil || player.Snake == nil || player.Snake.State != GameState_Snake_ALIVE {
+		if player == nil || player.Snake == nil {
 			continue
 		}
 
@@ -473,15 +476,24 @@ func (gs *GameSession) CheckCollisions() {
 		key := gs.coordKey(head.X, head.Y)
 
 		if gs.isHeadColliding(head, occupiedCells, player.Snake.PlayerId) {
-			player.Snake.State = GameState_Snake_ZOMBIE
 			deadSnakes[player.Snake.PlayerId] = true
 			gs.convertSnakeToFood(player.Snake)
-
 			gs.awardPointsForCollision(key, player.Snake.PlayerId, occupiedCells)
+			if player.Snake.State == GameState_Snake_ZOMBIE {
+				for i, p := range gs.Players {
+					if p.Snake == player.Snake {
+						gs.Players = append(gs.Players[:i], gs.Players[i+1:]...)
+						break
+					}
+				}
+			}
 		}
 	}
 
-	for i := range gs.Players {
+	for i, player := range gs.Players {
+		if player.Player == nil {
+			continue
+		}
 		if _, ok := deadSnakes[gs.Players[i].Player.Id]; ok {
 			gs.Players[i].Snake = nil
 		}
