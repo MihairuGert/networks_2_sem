@@ -326,7 +326,7 @@ func (g *Game) ChooseDeputy() error {
 }
 
 func (g *Game) getDeputy() *domain.GamePlayer {
-	if g.GameSession == nil || g.GameSession.State == nil || g.GameSession.Players == nil {
+	if g.GameSession == nil || g.GameSession.State == nil || g.GameSession.State.Players == nil {
 		return nil
 	}
 	for _, player := range g.GameSession.State.Players.Players {
@@ -347,6 +347,7 @@ func (g *Game) reformWrappers() {
 			id := players[i].Player.Id
 			if snake.PlayerId == id {
 				players[i].Snake = snake
+				players[i].CurrentDirection = snake.GetHeadDirection()
 				break
 			}
 			if id == g.GameSession.MyID() {
