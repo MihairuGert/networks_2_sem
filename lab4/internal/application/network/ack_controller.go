@@ -96,6 +96,7 @@ func (ac *AckController) daemonRoutine() {
 			if v.wasAck == Sent && time.Since(v.sendTime) > ac.resendInterval {
 				ac.ackMap[k].sendTime = time.Now()
 				messagesToResend = append(messagesToResend, v.msg)
+				keysToDelete = append(keysToDelete, k)
 			}
 
 			if v.doAutoCheck && v.wasAck == Ack {

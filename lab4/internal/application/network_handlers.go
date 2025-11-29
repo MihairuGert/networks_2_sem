@@ -13,23 +13,26 @@ import (
 )
 
 func (g *Game) startAnnouncement() error {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		if g.shouldStop {
-			return nil
-		}
-
-		if g.GameSession == nil || g.GameSession.Node.Role() != domain.NodeRole_MASTER {
-			continue
-		}
-		err2 := g.sendAnnouncementTo(network.MulticastAddress)
-		if err2 != nil {
-			return err2
+	for {
+		select {
+		case <-g.ticker.C:
+			if g.shouldStop {
+				return nil
+			}
+			if g.GameSession == nil || g.GameSession.Node.Role() != domain.NodeRole_MASTER {
+				continue
+			}
+			err2 := g.sendAnnouncementTo(network.MulticastAddress)
+			if err2 != nil {
+				return err2
+			}
+		default:
+			if g.shouldStop {
+				return nil
+			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	return nil
 }
 
 func (g *Game) sendAnnouncementTo(addr string) error {
@@ -134,20 +137,24 @@ func (g *Game) handleIncomingMessages() error {
 			println("Failed to unmarshal gameMessage")
 			continue
 		}
+		err := g.sendAckTo(&gameMsg, msg.Addr().String())
+		if err != nil {
+			return err
+		}
 		switch gameMsg.Type.(type) {
 		case *domain.GameMessage_Discover:
-			err := g.handleDiscover(&gameMsg, msg.Addr().String())
+			err = g.handleDiscover(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
 
 		case *domain.GameMessage_Announcement:
-			err := g.handleAnnouncement(&gameMsg, msg.Addr().String())
+			err = g.handleAnnouncement(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
 		case *domain.GameMessage_Join:
-			err := g.handleJoin(&gameMsg, msg.Addr().String())
+			err = g.handleJoin(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
@@ -170,7 +177,7 @@ func (g *Game) handleIncomingMessages() error {
 			if g.GameSession.Node.Role() != domain.NodeRole_MASTER {
 				continue
 			}
-			err := g.handleSteer(&gameMsg)
+			err = g.handleSteer(&gameMsg)
 			if err != nil {
 				continue
 			}
@@ -271,6 +278,15 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 }
 
 func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
+	switch originalMsg.Type.(type) {
+	case *domain.GameMessage_Discover:
+		return nil
+	case *domain.GameMessage_Announcement:
+		return nil
+	case *domain.GameMessage_Ack:
+		return nil
+	}
+
 	ackMsg := &domain.GameMessage{
 		MsgSeq:     originalMsg.MsgSeq,
 		SenderId:   originalMsg.GetSenderId(),
@@ -309,12 +325,18 @@ func (g *Game) sendErrorTo(msg *domain.GameMessage, dest string) error {
 	if err != nil {
 		return err
 	}
+	addr, err := network.StringToAddr(dest)
+	if err != nil {
+		return err
+	}
+	g.networkManager.NeedAck(network.NewMsg(data, addr), msg.MsgSeq, true)
 	return nil
 }
 
 func (g *Game) sendState() error {
+	msgSeq := g.networkManager.MsgSeq()
 	stateMsg := &domain.GameMessage{
-		MsgSeq:     g.networkManager.MsgSeq(),
+		MsgSeq:     msgSeq,
 		SenderId:   g.GameSession.MyID(),
 		ReceiverId: -1,
 		Type: &domain.GameMessage_State{
@@ -328,33 +350,40 @@ func (g *Game) sendState() error {
 	if err != nil {
 		return err
 	}
-	err = g.sendToAllPlayers(&data)
+	err = g.sendToAllPlayers(&data, msgSeq)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *Game) sendToAllPlayers(data *[]byte) error {
+func (g *Game) sendToAllPlayers(data *[]byte, msgSeq int64) error {
 	for i := range g.GameSession.Players {
 		if g.GameSession.Players[i].Player.Id == g.GameSession.MyID() {
 			continue
 		}
 		ip := g.GameSession.Players[i].Player.IpAddress
 		port := g.GameSession.Players[i].Player.Port
-		err := g.networkManager.SendMsg(data, ip+":"+strconv.FormatInt(int64(port), 10))
+		dest := fmt.Sprintf("%s:%d", ip, port)
+		err := g.networkManager.SendMsg(data, dest)
 		if err != nil {
 			return err
 		}
+		addr, err := network.StringToAddr(dest)
+		if err != nil {
+			return err
+		}
+		g.networkManager.NeedAck(network.NewMsg(*data, addr), msgSeq, true)
 	}
 	return nil
 }
 
 func (g *Game) sendSteer() error {
+	msgSeq := g.networkManager.MsgSeq()
 	steerMsg := &domain.GameMessage{
 		SenderId:   g.GameSession.MyID(),
 		ReceiverId: -1,
-		MsgSeq:     g.networkManager.MsgSeq(),
+		MsgSeq:     msgSeq,
 		Type: &domain.GameMessage_Steer{
 			Steer: &domain.GameMessage_SteerMsg{
 				Direction: g.controller.Direction(),
@@ -370,6 +399,11 @@ func (g *Game) sendSteer() error {
 	if err != nil {
 		return err
 	}
+	addr, err := network.StringToAddr(g.GameSession.Node.MasterAddr())
+	if err != nil {
+		return err
+	}
+	g.networkManager.NeedAck(network.NewMsg(data, addr), msgSeq, true)
 	return nil
 }
 

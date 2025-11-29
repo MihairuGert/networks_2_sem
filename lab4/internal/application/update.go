@@ -11,6 +11,7 @@ import (
 )
 
 var Recheck = errors.New("recheck")
+var Exit = errors.New("exit")
 
 func (g *Game) endApplication() {
 	elapsed := time.Since(g.shutdownTime)
@@ -138,6 +139,13 @@ func (g *Game) findGame() (AvailableGame, error) {
 	g.availableGamesMutex.Lock()
 	if g.availableGames == nil {
 		g.availableGamesMutex.Unlock()
+		fmt.Printf("No available games. Write e to exit, any other key to recheck...\n")
+		ind := ""
+		fmt.Scan(&ind)
+		if ind == "e" {
+			g.handleExitGame()
+			return AvailableGame{}, Exit
+		}
 		return AvailableGame{}, errors.New("no available games")
 	}
 
@@ -147,6 +155,13 @@ func (g *Game) findGame() (AvailableGame, error) {
 	}
 	g.availableGamesMutex.Unlock()
 	if len(availableGames) == 0 {
+		fmt.Printf("No available games. Write e to exit, any other key to recheck...\n")
+		ind := ""
+		fmt.Scan(&ind)
+		if ind == "e" {
+			g.handleExitGame()
+			return AvailableGame{}, Exit
+		}
 		return AvailableGame{}, errors.New("no available games")
 	}
 

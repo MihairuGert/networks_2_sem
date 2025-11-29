@@ -1,6 +1,7 @@
 package application
 
 import (
+	"errors"
 	"fmt"
 	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
@@ -19,6 +20,11 @@ func (g *Game) handleNewGame() {
 func (g *Game) handleExitGame() {
 	g.endGame()
 	g.stopNetwork()
+	err := g.goroutinePool.Wait()
+	if err != nil {
+		return
+	}
+	g.shouldStop = false
 
 	g.state = Menu
 }
@@ -72,12 +78,15 @@ func (g *Game) setUpRenderer() {
 func (g *Game) startNetwork() {
 	g.shouldStop = false
 	g.networkManager = network.NewNetworkManager(&g.shouldStop)
+	g.ticker = time.NewTicker(time.Second)
 	g.goroutinePool.Go(g.startAnnouncement)
 	g.startListening()
 }
 
 func (g *Game) stopNetwork() {
 	g.shouldStop = true
+	g.networkManager.Close()
+	g.ticker.Stop()
 }
 
 func (g *Game) handleConnect() {
@@ -86,6 +95,7 @@ func (g *Game) handleConnect() {
 
 	var game AvailableGame
 	for {
+		g.availableGames = make(map[string]AvailableGame)
 		err := g.handleIncomingMessages()
 		if err != nil {
 			println(err)
@@ -97,6 +107,9 @@ func (g *Game) handleConnect() {
 		}
 		game, err = g.findGame()
 		if err != nil {
+			if errors.Is(err, Exit) {
+				return
+			}
 			continue
 		}
 		break
@@ -113,7 +126,6 @@ func (g *Game) handleConnect() {
 			viewOnly = true
 		}
 	}
-	// todo move to init?
 	g.networkManager.StartAckDaemonWithDuration(time.Duration(game.Msg.Config.StateDelayMs/10) * time.Millisecond)
 	seqNum := g.JoinGame(game.Addr(), game.Msg.GetGameName(), viewOnly)
 	var ok bool

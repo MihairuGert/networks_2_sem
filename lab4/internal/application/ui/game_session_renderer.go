@@ -81,7 +81,7 @@ func (pl *PlayerList) formatPlayer(player *domain.GamePlayer) string {
 	role := "?"
 	switch player.Role {
 	case domain.NodeRole_NORMAL:
-		role = "P"
+		role = "N"
 	case domain.NodeRole_MASTER:
 		role = "M"
 	case domain.NodeRole_DEPUTY:

@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"net"
 	"snake-game/internal/domain"
 	"strconv"
@@ -28,6 +27,11 @@ type Manager struct {
 	sendChan chan Msg
 
 	ackController *AckController
+}
+
+func (nm *Manager) Close() {
+	nm.multicastSocket.Close()
+	nm.unicastSocket.Close()
 }
 
 func (nm *Manager) SetErr(seqNum int64, errMsg *domain.GameMessage) {
@@ -152,7 +156,6 @@ func (nm *Manager) ListenMulticast() error {
 		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.multicastSocket.ReadFromUDP(buffer)
 		if err != nil {
-			fmt.Printf("Multicast read error: %v\n", err)
 			continue
 		}
 
@@ -168,7 +171,6 @@ func (nm *Manager) ListenUnicast() error {
 		buffer := make([]byte, 65507)
 		n, srcAddr, err := nm.unicastSocket.ReadFromUDP(buffer)
 		if err != nil {
-			fmt.Printf("Unicast read error: %v\n", err)
 			continue
 		}
 
@@ -184,8 +186,7 @@ func (nm *Manager) sendGoroutine() {
 			}
 			_, err := nm.unicastSocket.WriteTo(msg.data, msg.addr)
 			if err != nil {
-				//fmt.Println(msg.addr, len(msg.data))
-				panic(err)
+				return
 			}
 		}
 	}

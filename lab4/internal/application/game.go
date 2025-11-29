@@ -47,9 +47,9 @@ type Game struct {
 	GameSession *domain.GameSession
 	controller  ui.Controller
 	myPlayer    *domain.PlayerWrapper
-
-	handleChannel  chan network.Msg
+	
 	networkManager *network.Manager
+	ticker         *time.Ticker
 	goroutinePool  *errgroup.Group
 	shouldStop     bool
 
