@@ -201,7 +201,12 @@ func (g *Game) handleRoleChg(msg *domain.GameMessage, srcAddr string) error {
 		return nil
 	}
 	rchg := msg.GetRoleChange()
+	if rchg == nil {
+		return nil
+	}
 	switch {
+	case rchg.SenderRole == domain.NodeRole_MASTER:
+		g.GameSession.Node.SetMasterAddr(srcAddr)
 	case rchg.ReceiverRole == domain.NodeRole_DEPUTY:
 		g.GameSession.BecomeDeputy()
 	}
@@ -296,7 +301,11 @@ func (g *Game) checkPlayersConnection() error {
 				g.GameSession.BecomeMaster()
 				g.reformWrappers()
 				g.removePlayer(playerAddr)
-				err := g.ChooseDeputy()
+				err := g.broadcastTakeover()
+				if err != nil {
+					return err
+				}
+				err = g.ChooseDeputy()
 				if err != nil {
 					return err
 				}
@@ -308,11 +317,35 @@ func (g *Game) checkPlayersConnection() error {
 	return nil
 }
 
+func (g *Game) broadcastTakeover() error {
+	msgSeq := g.networkManager.MsgSeq()
+	chgMsg := &domain.GameMessage{
+		SenderId:   g.GameSession.MyID(),
+		ReceiverId: -1,
+		MsgSeq:     msgSeq,
+		Type: &domain.GameMessage_RoleChange{
+			RoleChange: &domain.GameMessage_RoleChangeMsg{
+				SenderRole: domain.NodeRole_MASTER,
+			},
+		},
+	}
+
+	data, err := proto.Marshal(chgMsg)
+	if err != nil {
+		return err
+	}
+	return g.sendToAllPlayers(&data, msgSeq)
+}
+
 func (g *Game) removePlayer(playerAddr string) {
 	for i := range g.GameSession.Players {
 		if formatAddress(g.GameSession.Players[i].Player.IpAddress, g.GameSession.Players[i].Player.Port) == playerAddr {
 			if g.GameSession.Players[i].Player.Role == domain.NodeRole_VIEWER {
 				continue
+			}
+			if g.GameSession.Players[i].Snake == nil {
+				g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
+				break
 			}
 			g.GameSession.Players[i].Snake.State = domain.GameState_Snake_ZOMBIE
 			g.GameSession.Players[i].Player = nil
@@ -339,6 +372,9 @@ func (g *Game) getDeputy() *domain.GamePlayer {
 		return nil
 	}
 	for _, player := range g.GameSession.State.Players.Players {
+		if player == nil {
+			continue
+		}
 		if player.Role == domain.NodeRole_DEPUTY {
 			return player
 		}
@@ -375,7 +411,7 @@ func (g *Game) handleSteer(msg *domain.GameMessage) error {
 	}
 
 	for i, _ := range g.GameSession.Players {
-		if g.GameSession.Players[i].Player.Id != msg.SenderId {
+		if g.GameSession.Players[i].Player == nil || g.GameSession.Players[i].Player.Id != msg.SenderId {
 			continue
 		}
 		if domain.IsDirectionValid(g.GameSession.Players[i].CurrentDirection, steer.GetDirection()) {

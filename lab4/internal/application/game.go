@@ -47,7 +47,7 @@ type Game struct {
 	GameSession *domain.GameSession
 	controller  ui.Controller
 	myPlayer    *domain.PlayerWrapper
-	
+
 	networkManager *network.Manager
 	ticker         *time.Ticker
 	goroutinePool  *errgroup.Group
@@ -62,10 +62,6 @@ type Game struct {
 	finalMsg      *ui.Text
 	flickerInt    time.Duration
 	lastFlickTime time.Time
-
-	// todo move it to game config!
-	foodSpawnInt      time.Duration
-	lastFoodSpawnTime time.Time
 }
 
 func (g *Game) Init() error {
@@ -115,11 +111,12 @@ func (g *Game) setState() {
 	var players []*domain.GamePlayer
 	var snakes []*domain.GameState_Snake
 	for _, controller := range g.GameSession.Players {
-		players = append(players, controller.Player)
-		if controller.Snake == nil {
-			continue
+		if controller.Player != nil {
+			players = append(players, controller.Player)
 		}
-		snakes = append(snakes, controller.Snake)
+		if controller.Snake != nil {
+			snakes = append(snakes, controller.Snake)
+		}
 	}
 	g.GameSession.State.Snakes = snakes
 	g.GameSession.State.Players = &domain.GamePlayers{Players: players}

@@ -83,8 +83,8 @@ func (g *Game) checkFood() {
 }
 
 func (g *Game) addFood() {
-	if time.Since(g.lastFoodSpawnTime) >= g.foodSpawnInt {
-		g.lastFoodSpawnTime = time.Now()
+	if time.Since(g.GameSession.LastFoodSpawnTime) >= g.GameSession.FoodSpawnInt {
+		g.GameSession.LastFoodSpawnTime = time.Now()
 		g.GameSession.GenerateFood()
 	}
 }

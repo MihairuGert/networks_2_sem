@@ -66,9 +66,8 @@ func (g *Game) startGame() {
 	g.GameSession.BecomeMaster()
 	g.GameSession.SetMyID(g.GameSession.GetFreePlayerId())
 
-	// todo should be taken from config
-	g.lastFoodSpawnTime = time.Now()
-	g.foodSpawnInt = time.Second * 3
+	g.GameSession.LastFoodSpawnTime = time.Now()
+	g.GameSession.FoodSpawnInt = time.Duration(config.StateDelayMs) * time.Millisecond
 }
 
 func (g *Game) setUpRenderer() {

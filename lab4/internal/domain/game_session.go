@@ -21,6 +21,9 @@ type GameSession struct {
 	currentStateNum int
 
 	LastIterationTime time.Time
+
+	FoodSpawnInt      time.Duration
+	LastFoodSpawnTime time.Time
 }
 
 func (gs *GameSession) MyID() int32 {
@@ -66,7 +69,7 @@ func (gs *GameSession) GetFreePlayerId() int32 {
 
 func (gs *GameSession) BecomeMaster() {
 	gs.Node.role = NodeRole_MASTER
-	if gs.State == nil || gs.State.Snakes == nil || gs.State.Players == nil {
+	if gs.State == nil || gs.State.Players == nil {
 		return
 	}
 	for i, player := range gs.State.Players.Players {
@@ -93,7 +96,7 @@ func (gs *GameSession) ChooseDeputy() int {
 	if gs.Node.role != NodeRole_MASTER {
 		return -1
 	}
-	if gs.State == nil || gs.State.Snakes == nil || gs.State.Players == nil {
+	if gs.State == nil || gs.State.Players == nil {
 		return -1
 	}
 	if len(gs.Players) < 2 {
