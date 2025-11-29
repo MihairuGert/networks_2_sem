@@ -282,15 +282,7 @@ func (g *Game) checkPlayersConnection() error {
 			g.GameSession.Node.SetMasterAddr(deputyAddress)
 		case domain.NodeRole_MASTER:
 			deputy := g.getDeputy()
-			for i := range g.GameSession.Players {
-				if formatAddress(g.GameSession.Players[i].Player.IpAddress, g.GameSession.Players[i].Player.Port) == playerAddr {
-					if g.GameSession.Players[i].Player.Role == domain.NodeRole_VIEWER {
-						continue
-					}
-					g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
-					break
-				}
-			}
+			g.removePlayer(playerAddr)
 			if deputy == nil {
 				g.ChooseDeputy()
 				return nil
@@ -302,13 +294,8 @@ func (g *Game) checkPlayersConnection() error {
 		case domain.NodeRole_DEPUTY:
 			if playerAddr == g.GameSession.Node.MasterAddr() {
 				g.GameSession.BecomeMaster()
-				for i := range g.GameSession.State.Players.Players {
-					if formatAddress(g.GameSession.State.Players.Players[i].IpAddress, g.GameSession.State.Players.Players[i].Port) == playerAddr {
-						g.GameSession.State.Players.Players = append(g.GameSession.State.Players.Players[:i], g.GameSession.State.Players.Players[i+1:]...)
-						break
-					}
-				}
 				g.reformWrappers()
+				g.removePlayer(playerAddr)
 				err := g.ChooseDeputy()
 				if err != nil {
 					return err
@@ -319,6 +306,18 @@ func (g *Game) checkPlayersConnection() error {
 		}
 	}
 	return nil
+}
+
+func (g *Game) removePlayer(playerAddr string) {
+	for i := range g.GameSession.Players {
+		if formatAddress(g.GameSession.Players[i].Player.IpAddress, g.GameSession.Players[i].Player.Port) == playerAddr {
+			if g.GameSession.Players[i].Player.Role == domain.NodeRole_VIEWER {
+				continue
+			}
+			g.GameSession.Players = append(g.GameSession.Players[:i], g.GameSession.Players[i+1:]...)
+			break
+		}
+	}
 }
 
 func (g *Game) ChooseDeputy() error {
@@ -354,13 +353,13 @@ func (g *Game) reformWrappers() {
 	for _, snake := range g.GameSession.State.Snakes {
 		for i := range players {
 			id := players[i].Player.Id
+			if id == g.GameSession.MyID() {
+				g.controller.SetPlayer(players[i])
+			}
 			if snake.PlayerId == id {
 				players[i].Snake = snake
 				players[i].CurrentDirection = snake.GetHeadDirection()
 				break
-			}
-			if id == g.GameSession.MyID() {
-				g.controller.SetPlayer(players[i])
 			}
 		}
 	}
