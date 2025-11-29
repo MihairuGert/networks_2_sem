@@ -46,6 +46,9 @@ func NewAckController(sendChan *chan Msg, shouldStop *bool) *AckController {
 func (ac *AckController) addAckMsg(msg *Msg, msgSec int64, doAutoCheck bool) {
 	ac.ackMutex.Lock()
 	defer ac.ackMutex.Unlock()
+	if _, ok := ac.ackMap[msgSec]; ok {
+		return
+	}
 	ac.ackMap[msgSec] = &AckStatus{Sent, doAutoCheck, time.Now(), msg, nil}
 }
 
@@ -96,7 +99,6 @@ func (ac *AckController) daemonRoutine() {
 			if v.wasAck == Sent && time.Since(v.sendTime) > ac.resendInterval {
 				ac.ackMap[k].sendTime = time.Now()
 				messagesToResend = append(messagesToResend, v.msg)
-				keysToDelete = append(keysToDelete, k)
 			}
 
 			if v.doAutoCheck && v.wasAck == Ack {

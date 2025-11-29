@@ -97,6 +97,7 @@ func (g *Game) Update() error {
 		err := g.handleIncomingMessages()
 		if err != nil {
 			fmt.Println(err)
+			return nil
 		}
 		g.controller.Update()
 		g.Renderer.ExitButton.Update()

@@ -130,6 +130,13 @@ func (g *Game) startListening() {
 }
 
 func (g *Game) handleIncomingMessages() error {
+	//if g.GameSession != nil {
+	//	g.checkPlayersToPing()
+	err := g.checkPlayersConnection()
+	if err != nil {
+		return err
+	}
+	//}
 	messages := g.networkManager.GetUnreadMessages()
 	for _, msg := range messages {
 		var gameMsg domain.GameMessage
@@ -137,24 +144,20 @@ func (g *Game) handleIncomingMessages() error {
 			println("Failed to unmarshal gameMessage")
 			continue
 		}
-		err := g.sendAckTo(&gameMsg, msg.Addr().String())
-		if err != nil {
-			return err
-		}
 		switch gameMsg.Type.(type) {
 		case *domain.GameMessage_Discover:
-			err = g.handleDiscover(&gameMsg, msg.Addr().String())
+			err := g.handleDiscover(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
 
 		case *domain.GameMessage_Announcement:
-			err = g.handleAnnouncement(&gameMsg, msg.Addr().String())
+			err := g.handleAnnouncement(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
 		case *domain.GameMessage_Join:
-			err = g.handleJoin(&gameMsg, msg.Addr().String())
+			err := g.handleJoin(&gameMsg, msg.Addr().String())
 			if err != nil {
 				return err
 			}
@@ -177,16 +180,107 @@ func (g *Game) handleIncomingMessages() error {
 			if g.GameSession.Node.Role() != domain.NodeRole_MASTER {
 				continue
 			}
-			err = g.handleSteer(&gameMsg)
+			err := g.handleSteer(&gameMsg)
 			if err != nil {
 				continue
+			}
+			err = g.sendAckTo(&gameMsg, msg.Addr().String())
+			if err != nil {
+				return err
 			}
 		case *domain.GameMessage_Error:
 			g.networkManager.SetErr(gameMsg.MsgSeq, &gameMsg)
 			return errors.New(gameMsg.GetError().ErrorMessage)
+		case *domain.GameMessage_Ping:
+			err := g.sendAckTo(&gameMsg, msg.Addr().String())
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 	return nil
+}
+
+func (g *Game) checkPlayersToPing() {
+	needToPing := g.networkManager.GetWhoSentLessThan(time.Duration(g.GameSession.Config.StateDelayMs/10) * time.Millisecond)
+	if len(needToPing) == 0 {
+		return
+	}
+	for _, playerAddr := range needToPing {
+		g.sendPing(playerAddr)
+	}
+}
+
+func (g *Game) checkPlayersConnection() error {
+	if g.GameSession == nil || g.GameSession.Config == nil || g.GameSession.State == nil {
+		return nil
+	}
+	disconnectedPlayers := g.networkManager.GetWhoRecvLessThan(time.Duration(float64(g.GameSession.Config.StateDelayMs)*0.8) * time.Millisecond)
+	if len(disconnectedPlayers) == 0 {
+		return nil
+	}
+	for _, playerAddr := range disconnectedPlayers {
+		println(playerAddr)
+		switch g.GameSession.Node.Role() {
+		case domain.NodeRole_NORMAL:
+			deputy := g.getDeputy()
+			if deputy == nil {
+				g.handleExitGame()
+				return Exit
+			}
+			deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
+			g.GameSession.Node.SetMasterAddr(deputyAddress)
+		}
+		//case domain.NodeRole_MASTER:
+		//	// todo add zombie creation
+		//	deputy := g.getDeputy()
+		//	if deputy == nil {
+		//		g.GameSession.ChooseDeputy()
+		//		return nil
+		//	}
+		//	deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
+		//	if deputyAddress == playerAddr {
+		//		g.GameSession.ChooseDeputy()
+		//	}
+		//case domain.NodeRole_DEPUTY:
+		//	if playerAddr == g.GameSession.Node.MasterAddr() {
+		//		g.GameSession.BecomeMaster()
+		//		g.reformWrappers()
+		//	}
+		//}
+	}
+	return nil
+}
+
+func (g *Game) getDeputy() *domain.GamePlayer {
+	for _, player := range g.GameSession.State.Players.Players {
+		if player.Role == domain.NodeRole_DEPUTY {
+			return player
+		}
+	}
+	return nil
+}
+
+func (g *Game) reformWrappers() {
+	var players []*domain.PlayerWrapper
+	for _, player := range g.GameSession.State.Players.Players {
+		players = append(players, &domain.PlayerWrapper{Player: player})
+	}
+	for _, snake := range g.GameSession.State.Snakes {
+		for i := range players {
+			id := players[i].Player.Id
+			if snake.PlayerId == id {
+				players[i].Snake = snake
+				break
+			}
+			if id == g.GameSession.MyID() {
+				g.controller.SetPlayer(players[i])
+			}
+		}
+	}
+	g.myPlayer = nil
+	g.GameSession.Players = players
 }
 
 func (g *Game) handleSteer(msg *domain.GameMessage) error {
@@ -267,6 +361,7 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		if err != nil {
 			return err
 		}
+		g.GameSession.ChooseDeputy()
 		return nil
 	}
 
@@ -278,15 +373,6 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 }
 
 func (g *Game) sendAckTo(originalMsg *domain.GameMessage, dest string) error {
-	switch originalMsg.Type.(type) {
-	case *domain.GameMessage_Discover:
-		return nil
-	case *domain.GameMessage_Announcement:
-		return nil
-	case *domain.GameMessage_Ack:
-		return nil
-	}
-
 	ackMsg := &domain.GameMessage{
 		MsgSeq:     originalMsg.MsgSeq,
 		SenderId:   originalMsg.GetSenderId(),
@@ -364,7 +450,7 @@ func (g *Game) sendToAllPlayers(data *[]byte, msgSeq int64) error {
 		}
 		ip := g.GameSession.Players[i].Player.IpAddress
 		port := g.GameSession.Players[i].Player.Port
-		dest := fmt.Sprintf("%s:%d", ip, port)
+		dest := formatAddress(ip, port)
 		err := g.networkManager.SendMsg(data, dest)
 		if err != nil {
 			return err
@@ -376,6 +462,10 @@ func (g *Game) sendToAllPlayers(data *[]byte, msgSeq int64) error {
 		g.networkManager.NeedAck(network.NewMsg(*data, addr), msgSeq, true)
 	}
 	return nil
+}
+
+func formatAddress(ip string, port int32) string {
+	return fmt.Sprintf("%s:%d", ip, port)
 }
 
 func (g *Game) sendSteer() error {
@@ -404,6 +494,33 @@ func (g *Game) sendSteer() error {
 		return err
 	}
 	g.networkManager.NeedAck(network.NewMsg(data, addr), msgSeq, true)
+	return nil
+}
+
+func (g *Game) sendPing(addr string) error {
+	msgSeq := g.networkManager.MsgSeq()
+	pingMsg := &domain.GameMessage{
+		SenderId:   g.GameSession.MyID(),
+		ReceiverId: -1,
+		MsgSeq:     msgSeq,
+		Type: &domain.GameMessage_Ping{
+			Ping: &domain.GameMessage_PingMsg{},
+		},
+	}
+
+	data, err := proto.Marshal(pingMsg)
+	if err != nil {
+		return err
+	}
+	err = g.networkManager.SendMsg(&data, addr)
+	if err != nil {
+		return err
+	}
+	addrToAck, err := network.StringToAddr(addr)
+	if err != nil {
+		return err
+	}
+	g.networkManager.NeedAck(network.NewMsg(data, addrToAck), msgSeq, true)
 	return nil
 }
 

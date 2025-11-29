@@ -18,6 +18,8 @@ type Manager struct {
 	multicastSocket *net.UDPConn
 	unicastSocket   *net.UDPConn
 
+	stateDelayMs time.Duration
+
 	shouldStop *bool
 
 	msgQueue    *MsgQueue
@@ -27,6 +29,9 @@ type Manager struct {
 	sendChan chan Msg
 
 	ackController *AckController
+
+	sendPingMap sync.Map
+	recvPingMap sync.Map
 }
 
 func (nm *Manager) Close() {
@@ -83,6 +88,8 @@ func NewNetworkManager(shouldStop *bool) *Manager {
 		sendChan:        sendChan,
 		msqSeqMutex:     sync.Mutex{},
 		shouldStop:      shouldStop,
+		sendPingMap:     sync.Map{},
+		recvPingMap:     sync.Map{},
 	}
 	go nw.sendGoroutine()
 	return nw
@@ -120,6 +127,10 @@ func newMulticastSocket() (*net.UDPConn, error) {
 }
 
 func (nm *Manager) SendMsg(msg *[]byte, strAddr string) error {
+	if strAddr != MulticastAddress {
+		nm.sendPingMap.Store(strAddr, time.Now())
+	}
+
 	addr, err := StringToAddr(strAddr)
 	if err != nil {
 		return err
@@ -175,6 +186,11 @@ func (nm *Manager) ListenUnicast() error {
 		}
 
 		nm.msgQueue.addMsg(Msg{buffer[:n], srcAddr})
+		if srcAddr.String() == nm.unicastSocket.LocalAddr().String() {
+			continue
+		}
+		nm.recvPingMap.Store(srcAddr.String(), time.Now())
+
 	}
 }
 
@@ -183,6 +199,9 @@ func (nm *Manager) sendGoroutine() {
 		for msg := range nm.sendChan {
 			if *nm.shouldStop {
 				return
+			}
+			if msg.Addr().String() == nm.unicastSocket.LocalAddr().String() {
+				continue
 			}
 			_, err := nm.unicastSocket.WriteTo(msg.data, msg.addr)
 			if err != nil {
@@ -194,4 +213,56 @@ func (nm *Manager) sendGoroutine() {
 
 func (nm *Manager) GetUnreadMessages() []Msg {
 	return nm.msgQueue.readAllMsg()
+}
+
+func (nm *Manager) GetWhoSentLessThan(duration time.Duration) []string {
+	result := make([]string, 0)
+	now := time.Now()
+
+	nm.sendPingMap.Range(func(key, value interface{}) bool {
+		addr, ok := key.(string)
+		if !ok {
+			return true
+		}
+
+		lastPingTime, ok := value.(time.Time)
+		if !ok {
+			return true
+		}
+
+		if now.Sub(lastPingTime) > duration {
+			nm.recvPingMap.Delete(addr)
+			result = append(result, addr)
+		}
+
+		return true
+	})
+
+	return result
+}
+
+func (nm *Manager) GetWhoRecvLessThan(duration time.Duration) []string {
+	result := make([]string, 0)
+	now := time.Now()
+
+	nm.recvPingMap.Range(func(key, value interface{}) bool {
+		addr, ok := key.(string)
+		if !ok {
+			return true
+		}
+
+		lastPingTime, ok := value.(time.Time)
+		if !ok {
+			return true
+		}
+
+		if now.Sub(lastPingTime) > duration {
+			nm.recvPingMap.Delete(addr)
+			result = append(result, addr)
+		}
+
+		return true
+	})
+
+	return result
 }
