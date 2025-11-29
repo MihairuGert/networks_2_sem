@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"net"
 	"snake-game/internal/domain"
 	"strconv"
@@ -34,6 +35,22 @@ type Manager struct {
 
 	sendPingMap sync.Map
 	recvPingMap sync.Map
+}
+
+func (nm *Manager) GetAddr() string {
+	localAddr := nm.unicastSocket.LocalAddr().(*net.UDPAddr)
+	return fmt.Sprintf("%s:%d", getOutboundIP(), localAddr.Port)
+}
+
+func getOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "127.0.0.1"
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.String()
 }
 
 func (nm *Manager) Close() {

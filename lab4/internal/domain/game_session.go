@@ -54,13 +54,24 @@ func (gs *GameSession) CurrentStateNum() int {
 
 // GetFreePlayerId guarantees to return a free id.
 func (gs *GameSession) GetFreePlayerId() int32 {
-	temp := gs.nextPlayerId
-	gs.nextPlayerId++
-	return temp
+	maxId := int32(-1)
+	for _, player := range gs.Players {
+		maxId = max(player.Player.Id, int32(maxId))
+	}
+	return maxId + 1
 }
 
 func (gs *GameSession) BecomeMaster() {
 	gs.Node.role = NodeRole_MASTER
+	if gs.State == nil || gs.State.Snakes == nil || gs.State.Players == nil {
+		return
+	}
+	for i, player := range gs.State.Players.Players {
+		if player.Id == gs.myID {
+			gs.State.Players.Players[i].Role = NodeRole_MASTER
+			break
+		}
+	}
 }
 
 func (gs *GameSession) BecomeDeputy() {

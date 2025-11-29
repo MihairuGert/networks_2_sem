@@ -6,6 +6,7 @@ import (
 	"snake-game/internal/application/network"
 	"snake-game/internal/application/ui"
 	"snake-game/internal/domain"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -13,8 +14,28 @@ import (
 func (g *Game) handleNewGame() {
 	g.startGame()
 	g.startNetwork()
-
 	g.networkManager.StartAckDaemonWithDuration(time.Duration(g.GameSession.Config.StateDelayMs/10) * time.Millisecond)
+
+	controller := ui.Controller{}
+
+	addr := g.networkManager.GetAddr()
+	temp := strings.Split(addr, ":")
+	port, _ := strconv.Atoi(temp[1])
+
+	gp := domain.GamePlayer{
+		Name:      "me",
+		Id:        0,
+		IpAddress: temp[0],
+		Port:      int32(port),
+		Role:      0,
+		Type:      domain.PlayerType_HUMAN,
+		Score:     0,
+	}
+	player, _ := g.GameSession.AddPlayer(&gp)
+	controller.SetPlayer(player)
+	g.addController(controller)
+	player.Player.Role = domain.NodeRole_MASTER
+
 	g.state = Play
 }
 
@@ -43,22 +64,7 @@ func (g *Game) startGame() {
 	g.setUpRenderer()
 
 	g.GameSession.BecomeMaster()
-
-	controller := ui.Controller{}
 	g.GameSession.SetMyID(g.GameSession.GetFreePlayerId())
-	gp := domain.GamePlayer{
-		Name:      "me",
-		Id:        0,
-		IpAddress: "",
-		Port:      0,
-		Role:      0,
-		Type:      domain.PlayerType_HUMAN,
-		Score:     0,
-	}
-	player, _ := g.GameSession.AddPlayer(&gp)
-	controller.SetPlayer(player)
-	g.addController(controller)
-	player.Player.Role = domain.NodeRole_MASTER
 
 	// todo should be taken from config
 	g.lastFoodSpawnTime = time.Now()

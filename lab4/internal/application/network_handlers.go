@@ -295,6 +295,12 @@ func (g *Game) checkPlayersConnection() error {
 		case domain.NodeRole_DEPUTY:
 			if playerAddr == g.GameSession.Node.MasterAddr() {
 				g.GameSession.BecomeMaster()
+				for i := range g.GameSession.State.Players.Players {
+					if formatAddress(g.GameSession.State.Players.Players[i].IpAddress, g.GameSession.State.Players.Players[i].Port) == playerAddr {
+						g.GameSession.State.Players.Players = append(g.GameSession.State.Players.Players[:i], g.GameSession.State.Players.Players[i+1:]...)
+						break
+					}
+				}
 				g.reformWrappers()
 				err := g.ChooseDeputy()
 				if err != nil {
