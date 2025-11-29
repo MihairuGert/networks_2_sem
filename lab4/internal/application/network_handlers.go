@@ -130,13 +130,13 @@ func (g *Game) startListening() {
 }
 
 func (g *Game) handleIncomingMessages() error {
-	//if g.GameSession != nil {
-	//	g.checkPlayersToPing()
-	err := g.checkPlayersConnection()
-	if err != nil {
-		return err
+	if g.GameSession != nil {
+		////	g.checkPlayersToPing()
+		err := g.checkPlayersConnection()
+		if err != nil {
+			return err
+		}
 	}
-	//}
 	messages := g.networkManager.GetUnreadMessages()
 	for _, msg := range messages {
 		var gameMsg domain.GameMessage
@@ -197,7 +197,25 @@ func (g *Game) handleIncomingMessages() error {
 				return err
 			}
 			return nil
+		case *domain.GameMessage_RoleChange:
+			err := g.sendAckTo(&gameMsg, msg.Addr().String())
+			if err != nil {
+				return err
+			}
+			err = g.handleRoleChg(&gameMsg)
+			if err != nil {
+				return err
+			}
 		}
+	}
+	return nil
+}
+
+func (g *Game) handleRoleChg(msg *domain.GameMessage) error {
+	rchg := msg.GetRoleChange()
+	switch {
+	case rchg.ReceiverRole == domain.NodeRole_DEPUTY:
+		g.GameSession.BecomeDeputy()
 	}
 	return nil
 }
@@ -231,29 +249,48 @@ func (g *Game) checkPlayersConnection() error {
 			}
 			deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
 			g.GameSession.Node.SetMasterAddr(deputyAddress)
+		case domain.NodeRole_MASTER:
+			// todo add zombie creation
+			//deputy := g.getDeputy()
+			//if deputy == nil {
+			//	g.GameSession.ChooseDeputy()
+			//	return nil
+			//}
+			//deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
+			//if deputyAddress == playerAddr {
+			//	g.GameSession.ChooseDeputy()
+			//}
+		case domain.NodeRole_DEPUTY:
+			if playerAddr == g.GameSession.Node.MasterAddr() {
+				g.GameSession.BecomeMaster()
+				g.reformWrappers()
+				err := g.ChooseDeputy()
+				if err != nil {
+					return err
+				}
+			}
 		}
-		//case domain.NodeRole_MASTER:
-		//	// todo add zombie creation
-		//	deputy := g.getDeputy()
-		//	if deputy == nil {
-		//		g.GameSession.ChooseDeputy()
-		//		return nil
-		//	}
-		//	deputyAddress := formatAddress(deputy.IpAddress, deputy.Port)
-		//	if deputyAddress == playerAddr {
-		//		g.GameSession.ChooseDeputy()
-		//	}
-		//case domain.NodeRole_DEPUTY:
-		//	if playerAddr == g.GameSession.Node.MasterAddr() {
-		//		g.GameSession.BecomeMaster()
-		//		g.reformWrappers()
-		//	}
-		//}
+	}
+	return nil
+}
+
+func (g *Game) ChooseDeputy() error {
+	ind := g.GameSession.ChooseDeputy()
+	if ind >= 0 {
+		dip := g.GameSession.Players[ind].Player.IpAddress
+		dPort := g.GameSession.Players[ind].Player.Port
+		err := g.sendRoleChangeMsg(formatAddress(dip, dPort))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (g *Game) getDeputy() *domain.GamePlayer {
+	if g.GameSession == nil || g.GameSession.State == nil || g.GameSession.Players == nil {
+		return nil
+	}
 	for _, player := range g.GameSession.State.Players.Players {
 		if player.Role == domain.NodeRole_DEPUTY {
 			return player
@@ -361,7 +398,10 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		if err != nil {
 			return err
 		}
-		g.GameSession.ChooseDeputy()
+		err = g.ChooseDeputy()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -509,6 +549,35 @@ func (g *Game) sendPing(addr string) error {
 	}
 
 	data, err := proto.Marshal(pingMsg)
+	if err != nil {
+		return err
+	}
+	err = g.networkManager.SendMsg(&data, addr)
+	if err != nil {
+		return err
+	}
+	addrToAck, err := network.StringToAddr(addr)
+	if err != nil {
+		return err
+	}
+	g.networkManager.NeedAck(network.NewMsg(data, addrToAck), msgSeq, true)
+	return nil
+}
+
+func (g *Game) sendRoleChangeMsg(addr string) error {
+	msgSeq := g.networkManager.MsgSeq()
+	chgMsg := &domain.GameMessage{
+		SenderId:   g.GameSession.MyID(),
+		ReceiverId: -1,
+		MsgSeq:     msgSeq,
+		Type: &domain.GameMessage_RoleChange{
+			RoleChange: &domain.GameMessage_RoleChangeMsg{
+				ReceiverRole: domain.NodeRole_DEPUTY,
+			},
+		},
+	}
+
+	data, err := proto.Marshal(chgMsg)
 	if err != nil {
 		return err
 	}

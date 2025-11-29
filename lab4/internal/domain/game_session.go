@@ -61,7 +61,10 @@ func (gs *GameSession) GetFreePlayerId() int32 {
 
 func (gs *GameSession) BecomeMaster() {
 	gs.Node.role = NodeRole_MASTER
-	gs.ChooseDeputy()
+}
+
+func (gs *GameSession) BecomeDeputy() {
+	gs.Node.role = NodeRole_DEPUTY
 }
 
 func (gs *GameSession) BecomeNormal() {
@@ -72,30 +75,31 @@ func (gs *GameSession) BecomeViewer() {
 	gs.Node.role = NodeRole_VIEWER
 }
 
-func (gs *GameSession) ChooseDeputy() {
+func (gs *GameSession) ChooseDeputy() int {
 	if gs.Node.role != NodeRole_MASTER {
-		return
+		return -1
 	}
 	if gs.State == nil || gs.State.Snakes == nil || gs.State.Players == nil {
-		return
+		return -1
 	}
-	if len(gs.State.Players.Players) < 2 {
-		return
+	if len(gs.Players) < 2 {
+		return -1
 	}
 	ind := -1
-	for i := range gs.State.Players.Players {
-		if gs.State.Players.Players[i].Id == gs.myID || gs.State.Players.Players[i].Role == NodeRole_VIEWER {
+	for i := range gs.Players {
+		if gs.Players[i].Player.Id == gs.myID || gs.Players[i].Player.Role == NodeRole_VIEWER {
 			continue
 		}
-		if gs.State.Players.Players[i].Role == NodeRole_DEPUTY {
-			return
+		if gs.Players[i].Player.Role == NodeRole_DEPUTY {
+			return -1
 		}
 		ind = i
 	}
 	if ind == -1 {
-		return
+		return -1
 	}
-	gs.State.Players.Players[ind].Role = NodeRole_DEPUTY
+	gs.Players[ind].Player.Role = NodeRole_DEPUTY
+	return ind
 }
 
 func (gs *GameSession) GenerateFood() {
