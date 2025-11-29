@@ -247,11 +247,12 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		Score:     0,
 	}
 
-	_, canJoin := g.GameSession.AddPlayer(&gp)
+	player, canJoin := g.GameSession.AddPlayer(&gp)
 
 	if canJoin {
 		msg.ReceiverId = id
 		err := g.sendAckTo(msg, srcAddr)
+		g.Renderer.AddPlayer(player.Player.Name, GetRoleString(player.Player.Role), int(player.Player.Score))
 		if err != nil {
 			return err
 		}

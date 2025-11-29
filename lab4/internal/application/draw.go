@@ -21,6 +21,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			return
 		}
 		g.Renderer.DrawGrid(screen)
+		g.Renderer.DrawPlayerList(screen)
 		g.drawSnakes(screen)
 		g.drawFood(screen)
 	case End:
@@ -102,4 +103,18 @@ func (g *Game) setupMenu() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func GetRoleString(role domain.NodeRole) string {
+	switch role {
+	case domain.NodeRole_NORMAL:
+		return "N"
+	case domain.NodeRole_VIEWER:
+		return "V"
+	case domain.NodeRole_MASTER:
+		return "M"
+	case domain.NodeRole_DEPUTY:
+		return "D"
+	}
+	return "?"
 }

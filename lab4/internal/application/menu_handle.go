@@ -34,12 +34,14 @@ func (g *Game) startGame() {
 		IpAddress: "",
 		Port:      0,
 		Role:      0,
-		Type:      0,
+		Type:      domain.PlayerType_HUMAN,
 		Score:     0,
 	}
 	player, _ := g.GameSession.AddPlayer(&gp)
 	controller.SetPlayer(player)
 	g.addController(controller)
+	player.Player.Role = domain.NodeRole_MASTER
+	g.Renderer.AddPlayer(player.Player.Name, GetRoleString(player.Player.Role), int(player.Player.Score))
 
 	// todo should be taken from config
 	g.lastFoodSpawnTime = time.Now()
@@ -47,7 +49,11 @@ func (g *Game) startGame() {
 }
 
 func (g *Game) setUpRenderer() {
-	renderer := ui.GameSessionRenderer{ScreenWidth: float32(screenWidthGlobal), ScreenHeight: float32(screenHeightGlobal)}
+	renderer := ui.GameSessionRenderer{
+		ScreenWidth:  float32(screenWidthGlobal),
+		ScreenHeight: float32(screenHeightGlobal),
+		PlayerList:   ui.NewPlayerList(float64(screenWidthGlobal-300), 50, 25),
+	}
 	g.Renderer = &renderer
 	g.Renderer.SetGridImage(g.GameSession.Grid)
 }
