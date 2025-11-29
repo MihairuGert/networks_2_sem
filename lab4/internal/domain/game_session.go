@@ -368,82 +368,6 @@ func getOppositeDirection(dir Direction) Direction {
 	}
 }
 
-func (gs *GameSession) CheckCollisions() {
-	occupiedCells := gs.getAllOccupiedCells()
-
-	deadSnakes := make(map[int32]bool)
-
-	for _, player := range gs.Players {
-		if player == nil || player.Snake == nil || player.Snake.State != GameState_Snake_ALIVE {
-			continue
-		}
-
-		snakeCoords := gs.getSnakeAbsoluteCoordinates(player.Snake)
-		if len(snakeCoords) == 0 {
-			continue
-		}
-
-		head := snakeCoords[0]
-
-		if gs.isHeadColliding(head, occupiedCells, player.Snake.PlayerId) {
-			player.Snake.State = GameState_Snake_ZOMBIE
-			deadSnakes[player.Snake.PlayerId] = true
-			gs.convertSnakeToFood(player.Snake)
-			gs.awardPointsForCollision(head, player.Snake.PlayerId)
-		}
-	}
-
-	for i := range gs.Players {
-		if _, ok := deadSnakes[gs.Players[i].Player.Id]; ok {
-			gs.Players[i].Snake = nil
-			break
-		}
-	}
-}
-
-func (gs *GameSession) calculateNewHeadPosition(oldHead *GameState_Coord, direction Direction) *GameState_Coord {
-	newHead := &GameState_Coord{X: oldHead.X, Y: oldHead.Y}
-
-	switch direction {
-	case Direction_UP:
-		newHead.Y = gs.normalizeY(oldHead.Y - 1)
-	case Direction_DOWN:
-		newHead.Y = gs.normalizeY(oldHead.Y + 1)
-	case Direction_LEFT:
-		newHead.X = gs.normalizeX(oldHead.X - 1)
-	case Direction_RIGHT:
-		newHead.X = gs.normalizeX(oldHead.X + 1)
-	}
-
-	return newHead
-}
-
-func (gs *GameSession) growSnake(snake *GameState_Snake, newHead *GameState_Coord) {
-	absCoords := gs.getSnakeAbsoluteCoordinates(snake)
-	if len(absCoords) == 0 {
-		return
-	}
-
-	newAbsCoords := append([]*GameState_Coord{newHead}, absCoords...)
-
-	snake.Points = gs.absoluteToRelative(newAbsCoords)
-
-	snake.HeadDirection = gs.getDirectionFromPoints(newAbsCoords)
-}
-
-func (gs *GameSession) moveSnake(snake *GameState_Snake, newHead *GameState_Coord) {
-	absCoords := gs.getSnakeAbsoluteCoordinates(snake)
-	if len(absCoords) == 0 {
-		return
-	}
-
-	newAbsCoords := append([]*GameState_Coord{newHead}, absCoords[:len(absCoords)-1]...)
-
-	snake.Points = gs.absoluteToRelative(newAbsCoords)
-
-	snake.HeadDirection = gs.getDirectionFromPoints(newAbsCoords)
-}
-
 func (gs *GameSession) isHeadColliding(head *GameState_Coord, occupiedCells map[string][]int32, currentSnakeId int32) bool {
 	key := gs.coordKey(head.X, head.Y)
 
@@ -489,11 +413,12 @@ func (gs *GameSession) convertSnakeToFood(snake *GameState_Snake) {
 	}
 }
 
-func (gs *GameSession) awardPointsForCollision(collisionPoint *GameState_Coord, collidingSnakeId int32) {
+func (gs *GameSession) CheckCollisions() {
+	occupiedCells := gs.getAllOccupiedCells()
+	deadSnakes := make(map[int32]bool)
+
 	for _, player := range gs.Players {
-		if player == nil || player.Snake == nil ||
-			player.Snake.State != GameState_Snake_ALIVE ||
-			player.Snake.PlayerId == collidingSnakeId {
+		if player == nil || player.Snake == nil || player.Snake.State != GameState_Snake_ALIVE {
 			continue
 		}
 
@@ -503,72 +428,36 @@ func (gs *GameSession) awardPointsForCollision(collisionPoint *GameState_Coord, 
 		}
 
 		head := snakeCoords[0]
-		if head.X == collisionPoint.X && head.Y == collisionPoint.Y {
-			player.Player.Score++
+		key := gs.coordKey(head.X, head.Y)
+
+		if gs.isHeadColliding(head, occupiedCells, player.Snake.PlayerId) {
+			player.Snake.State = GameState_Snake_ZOMBIE
+			deadSnakes[player.Snake.PlayerId] = true
+			gs.convertSnakeToFood(player.Snake)
+
+			gs.awardPointsForCollision(key, player.Snake.PlayerId, occupiedCells)
+		}
+	}
+
+	for i := range gs.Players {
+		if _, ok := deadSnakes[gs.Players[i].Player.Id]; ok {
+			gs.Players[i].Snake = nil
 		}
 	}
 }
 
-func (gs *GameSession) getDirectionFromPoints(absCoords []*GameState_Coord) Direction {
-	if len(absCoords) < 2 {
-		return Direction_UP
-	}
-
-	head := absCoords[0]
-	next := absCoords[1]
-
-	dx := next.X - head.X
-	dy := next.Y - head.Y
-
-	if dx > gs.Config.Width/2 {
-		dx -= gs.Config.Width
-	} else if dx < -gs.Config.Width/2 {
-		dx += gs.Config.Width
-	}
-
-	if dy > gs.Config.Height/2 {
-		dy -= gs.Config.Height
-	} else if dy < -gs.Config.Height/2 {
-		dy += gs.Config.Height
-	}
-
-	if dx > 0 {
-		return Direction_RIGHT
-	} else if dx < 0 {
-		return Direction_LEFT
-	} else if dy > 0 {
-		return Direction_DOWN
-	} else {
-		return Direction_UP
-	}
-}
-
-func (gs *GameSession) absoluteToRelative(absCoords []*GameState_Coord) []*GameState_Coord {
-	if len(absCoords) == 0 {
-		return nil
-	}
-
-	relative := make([]*GameState_Coord, len(absCoords))
-	relative[0] = &GameState_Coord{X: absCoords[0].X, Y: absCoords[0].Y} // Голова - абсолютные координаты
-
-	for i := 1; i < len(absCoords); i++ {
-		dx := absCoords[i].X - absCoords[i-1].X
-		dy := absCoords[i].Y - absCoords[i-1].Y
-
-		if dx > gs.Config.Width/2 {
-			dx -= gs.Config.Width
-		} else if dx < -gs.Config.Width/2 {
-			dx += gs.Config.Width
+func (gs *GameSession) awardPointsForCollision(collisionPointKey string, collidingSnakeId int32, occupiedCells map[string][]int32) {
+	if snakeIDs, exists := occupiedCells[collisionPointKey]; exists {
+		for _, snakeID := range snakeIDs {
+			if snakeID != collidingSnakeId {
+				for _, player := range gs.Players {
+					if player != nil && player.Snake != nil &&
+						player.Snake.State == GameState_Snake_ALIVE &&
+						player.Snake.PlayerId == snakeID {
+						player.Player.Score++
+					}
+				}
+			}
 		}
-
-		if dy > gs.Config.Height/2 {
-			dy -= gs.Config.Height
-		} else if dy < -gs.Config.Height/2 {
-			dy += gs.Config.Height
-		}
-
-		relative[i] = &GameState_Coord{X: dx, Y: dy}
 	}
-
-	return relative
 }

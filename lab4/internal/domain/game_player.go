@@ -71,4 +71,5 @@ func (pw *PlayerWrapper) Grow() {
 	x := points[len(points)-1].X
 	y := points[len(points)-1].Y
 	pw.SetPoints(append(points, &GameState_Coord{X: x, Y: y}))
+	pw.Player.Score++
 }

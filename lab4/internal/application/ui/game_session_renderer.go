@@ -33,8 +33,10 @@ func (r *GameSessionRenderer) SetGridImage(grid *domain.Grid) {
 	r.gridImage = image
 }
 
-func (r *GameSessionRenderer) Update() {
-	r.PlayerList.Update()
+func (r *GameSessionRenderer) Update(players []*domain.GamePlayer) {
+	if r.PlayerList != nil {
+		r.PlayerList.Update(players)
+	}
 }
 
 func (r *GameSessionRenderer) DrawGrid(screen *ebiten.Image) {
@@ -43,20 +45,15 @@ func (r *GameSessionRenderer) DrawGrid(screen *ebiten.Image) {
 }
 
 func (r *GameSessionRenderer) DrawPlayerList(screen *ebiten.Image) {
-	r.PlayerList.Draw(screen)
+	if r.PlayerList != nil {
+		r.PlayerList.Draw(screen)
+	}
 }
 
 type PlayerList struct {
-	players []*PlayerEntry
-	x, y    float64
-	step    float64
-}
-
-type PlayerEntry struct {
-	name  string
-	role  string
-	score int
-	text  *Text
+	playerTexts []*Text
+	x, y        float64
+	step        float64
 }
 
 func NewPlayerList(x, y, step float64) *PlayerList {
@@ -67,70 +64,34 @@ func NewPlayerList(x, y, step float64) *PlayerList {
 	}
 }
 
-func (r *GameSessionRenderer) AddPlayer(name, role string, score int) {
-	entry := &PlayerEntry{
-		name:  name,
-		role:  role,
-		score: score,
-		text:  NewText("", 16, r.PlayerList.x, r.PlayerList.y+float64(len(r.PlayerList.players))*r.PlayerList.step),
-	}
-	entry.text.SetText(entry.format())
-	entry.text.SetColor(colornames.White)
-	r.PlayerList.players = append(r.PlayerList.players, entry)
-}
+func (pl *PlayerList) Update(players []*domain.GamePlayer) {
+	pl.playerTexts = nil
 
-func (r *GameSessionRenderer) RemovePlayer(name string) {
-	for i, player := range r.PlayerList.players {
-		if player.name == name {
-			r.PlayerList.players = append(r.PlayerList.players[:i], r.PlayerList.players[i+1:]...)
-			r.PlayerList.updatePositions()
-			return
-		}
+	for i, player := range players {
+		text := NewText("", 14, pl.x, pl.y+float64(i)*pl.step)
+		text.SetText(pl.formatPlayer(player))
+		text.SetColor(colornames.White)
+		pl.playerTexts = append(pl.playerTexts, text)
 	}
 }
 
-func (r *GameSessionRenderer) UpdatePlayerScore(name string, score int) {
-	for _, player := range r.PlayerList.players {
-		if player.name == name {
-			player.score = score
-			player.text.SetText(player.format())
-			return
-		}
+func (pl *PlayerList) formatPlayer(player *domain.GamePlayer) string {
+	role := "?"
+	switch player.Role {
+	case domain.NodeRole_NORMAL:
+		role = "P"
+	case domain.NodeRole_MASTER:
+		role = "M"
+	case domain.NodeRole_DEPUTY:
+		role = "D"
+	case domain.NodeRole_VIEWER:
+		role = "V"
 	}
-}
-
-func (r *GameSessionRenderer) UpdatePlayerRole(name string, role string) {
-	for _, player := range r.PlayerList.players {
-		if player.name == name {
-			player.role = role
-			player.text.SetText(player.format())
-			return
-		}
-	}
-}
-
-func (player *PlayerEntry) format() string {
-	return fmt.Sprintf("%s[%s]-%d", player.name, player.role, player.score)
-}
-
-func (pl *PlayerList) Update() {
-	for _, player := range pl.players {
-		player.text.SetColor(colornames.White)
-	}
+	return fmt.Sprintf("%s[%s] - %d", player.Name, role, player.Score)
 }
 
 func (pl *PlayerList) Draw(screen *ebiten.Image) {
-	for _, player := range pl.players {
-		player.text.Draw(screen)
+	for _, text := range pl.playerTexts {
+		text.Draw(screen)
 	}
-}
-
-func (pl *PlayerList) updatePositions() {
-	for i, player := range pl.players {
-		player.text.SetPosition(pl.x, pl.y+float64(i)*pl.step)
-	}
-}
-
-func (pl *PlayerList) Clear() {
-	pl.players = []*PlayerEntry{}
 }

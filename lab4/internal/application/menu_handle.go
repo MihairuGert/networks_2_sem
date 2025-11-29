@@ -41,7 +41,6 @@ func (g *Game) startGame() {
 	controller.SetPlayer(player)
 	g.addController(controller)
 	player.Player.Role = domain.NodeRole_MASTER
-	g.Renderer.AddPlayer(player.Player.Name, GetRoleString(player.Player.Role), int(player.Player.Score))
 
 	// todo should be taken from config
 	g.lastFoodSpawnTime = time.Now()

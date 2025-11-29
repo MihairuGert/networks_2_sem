@@ -157,6 +157,7 @@ func (g *Game) handleIncomingMessages() error {
 				continue
 			}
 			state := gameMsg.GetState().State
+			g.Renderer.Update(state.Players.Players)
 			g.GameSession.State = state
 		case *domain.GameMessage_Steer:
 			if g.GameSession == nil {
@@ -247,12 +248,11 @@ func (g *Game) handleJoin(msg *domain.GameMessage, srcAddr string) error {
 		Score:     0,
 	}
 
-	player, canJoin := g.GameSession.AddPlayer(&gp)
+	_, canJoin := g.GameSession.AddPlayer(&gp)
 
 	if canJoin {
 		msg.ReceiverId = id
 		err := g.sendAckTo(msg, srcAddr)
-		g.Renderer.AddPlayer(player.Player.Name, GetRoleString(player.Player.Role), int(player.Player.Score))
 		if err != nil {
 			return err
 		}

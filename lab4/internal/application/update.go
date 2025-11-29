@@ -53,26 +53,31 @@ func (g *Game) checkBorders() {
 }
 
 func (g *Game) checkFood() {
-	for i, _ := range g.GameSession.Players {
+	for i := range g.GameSession.Players {
 		if g.GameSession.Players[i].Snake == nil {
 			continue
 		}
-		for k, food := range g.GameSession.State.Foods {
-			points := g.GameSession.Players[i].GetPoints()
-			head := points[0]
-			curx := head.X
-			cury := head.Y
-			for j := 1; j < len(points); j++ {
-				if (curx == food.X) && (cury == food.Y) {
-					// here logic of growth
-					g.GameSession.Players[i].Grow()
-					g.GameSession.State.Foods = append(g.GameSession.State.Foods[:k], g.GameSession.State.Foods[k+1:]...)
-					break
-				}
-				curx = curx + points[j].X
-				cury = cury + points[j].Y
+
+		points := g.GameSession.Players[i].GetPoints()
+		if len(points) == 0 {
+			continue
+		}
+
+		head := points[0]
+
+		var remainingFood []*domain.GameState_Coord
+		foodEaten := false
+
+		for _, food := range g.GameSession.State.Foods {
+			if head.X == food.X && head.Y == food.Y && !foodEaten {
+				g.GameSession.Players[i].Grow()
+				foodEaten = true
+			} else {
+				remainingFood = append(remainingFood, food)
 			}
 		}
+
+		g.GameSession.State.Foods = remainingFood
 	}
 }
 
@@ -99,6 +104,7 @@ func (g *Game) Update() error {
 				g.GameSession.LastIterationTime = time.Now()
 				g.computeNextIteration()
 				g.setState()
+				g.Renderer.Update(g.GameSession.State.Players.Players)
 				g.sendState()
 			}
 		case domain.NodeRole_DEPUTY:
@@ -116,7 +122,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) computeNextIteration() {
-	g.Renderer.Update()
 	g.moveControllers()
 	g.checkBorders()
 	g.checkPlayerCollision()

@@ -104,17 +104,3 @@ func (g *Game) setupMenu() {
 		panic(err)
 	}
 }
-
-func GetRoleString(role domain.NodeRole) string {
-	switch role {
-	case domain.NodeRole_NORMAL:
-		return "N"
-	case domain.NodeRole_VIEWER:
-		return "V"
-	case domain.NodeRole_MASTER:
-		return "M"
-	case domain.NodeRole_DEPUTY:
-		return "D"
-	}
-	return "?"
-}
